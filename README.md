@@ -38,6 +38,7 @@ Open http://localhost:8080.
 | `ADMIN_EMAIL` | — | The account with this email becomes admin |
 | `ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:8080` | Sites allowed to call the API (add your Vercel URL) |
 | `UPLOAD_DIR` | `uploads` | Where photos/videos are stored |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET` | —, —, `media` | If set, photos/videos go to this public Supabase Storage bucket (created automatically) instead of `UPLOAD_DIR`. Needed on hosts that wipe the disk, like Render free |
 | `PAYMENTS_MODE` | `mock` | `mock` = test top-ups with fake money. Anything else disables top-ups until a real provider is connected |
 | `REGISTRATION_FEE_TETRI` / `REGISTRATION_DAYS` | `2000` / `30` | Technician/seller registration: 20 GEL per 30 days |
 | `REVEAL_PRICE_TETRI` | `200` | Price for a technician to view a customer's number (2 GEL) |
@@ -58,7 +59,6 @@ cd backend && TEST_DATABASE_URL=postgres://postgres:devpass@localhost:5432/eliav
 ## Not done yet
 
 - Real payments: top-ups are simulated. Connect a Georgian provider (Bank of Georgia iPay, TBC Pay or Flitt) in `backend/internal/server/wallet.go` (`topUp`).
-- Uploads are stored on the server's disk. On hosts with temporary disks, move them to S3/Cloudflare R2/Supabase Storage.
 - Phone number verification by SMS.
 - Delivery is a flat fee handled by the seller/courier manually.
 - Terms & Conditions are a draft and need review by a Georgian lawyer.

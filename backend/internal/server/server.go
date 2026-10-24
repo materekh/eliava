@@ -33,6 +33,7 @@ type Config struct {
 	DeliveryFee      int64
 	BoostDays        int
 	AI               AIConfig
+	Storage          SupabaseStorage
 }
 
 type Server struct {

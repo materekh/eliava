@@ -176,7 +176,7 @@ func (s *Server) queryListings(ctx context.Context, where string, args ...any) (
 		if err := mrows.Scan(&lid, &m.ID, &m.Kind, &rel); err != nil {
 			return nil, err
 		}
-		m.URL = mediaURL(rel)
+		m.URL = s.mediaURL(rel)
 		listings[index[lid]].Media = append(listings[index[lid]].Media, m)
 	}
 	return listings, mrows.Err()
