@@ -33,7 +33,7 @@ async function api(method, path, body) {
   }
   return data;
 }
-const mediaURL = url => API + url;
+const mediaURL = url => /^https?:/.test(url) ? url : API + url;
 function setSession(token, user) {
   S.token = token; S.me = user;
   if (token) localStorage.setItem("eliava_token", token); else localStorage.removeItem("eliava_token");

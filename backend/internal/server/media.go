@@ -1,15 +1,14 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
@@ -53,20 +52,16 @@ func parseMultipart(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// saveUploads stores the files of a parsed multipart field under UploadDir/sub.
+// saveUploads stores the files of a parsed multipart field under sub/ (local disk or Supabase Storage).
 // Callers must call removeFiles if they fail to record the files afterwards.
 func (s *Server) saveUploads(r *http.Request, field, sub string) ([]savedFile, error) {
 	headers := r.MultipartForm.File[field]
 	if len(headers) > maxUploadFiles {
 		return nil, badRequest("You can upload at most %d files", maxUploadFiles)
 	}
-	dir := filepath.Join(s.cfg.UploadDir, sub)
-	if err := ensureDir(dir); err != nil {
-		return nil, err
-	}
 	var saved []savedFile
 	for _, h := range headers {
-		f, err := s.saveUpload(h, dir, sub)
+		f, err := s.saveUpload(r.Context(), h, sub)
 		if err != nil {
 			s.removeFiles(saved)
 			return nil, err
@@ -76,7 +71,7 @@ func (s *Server) saveUploads(r *http.Request, field, sub string) ([]savedFile, e
 	return saved, nil
 }
 
-func (s *Server) saveUpload(h *multipart.FileHeader, dir, sub string) (savedFile, error) {
+func (s *Server) saveUpload(ctx context.Context, h *multipart.FileHeader, sub string) (savedFile, error) {
 	src, err := h.Open()
 	if err != nil {
 		return savedFile{}, err
@@ -111,29 +106,10 @@ func (s *Server) saveUpload(h *multipart.FileHeader, dir, sub string) (savedFile
 	if _, err := rand.Read(b); err != nil {
 		return savedFile{}, err
 	}
-	name := hex.EncodeToString(b) + info.ext
-	dst, err := os.Create(filepath.Join(dir, name))
+	key := sub + "/" + hex.EncodeToString(b) + info.ext
+	size, err := s.storeFile(ctx, key, mime, src, h.Size, limit)
 	if err != nil {
 		return savedFile{}, err
 	}
-	size, err := io.Copy(dst, io.LimitReader(src, limit+1))
-	if cerr := dst.Close(); err == nil {
-		err = cerr
-	}
-	if err == nil && size > limit {
-		err = badRequest("%s is too large", h.Filename)
-	}
-	if err != nil {
-		os.Remove(filepath.Join(dir, name))
-		return savedFile{}, err
-	}
-	return savedFile{kind: info.kind, rel: sub + "/" + name, mime: mime, size: size}, nil
+	return savedFile{kind: info.kind, rel: key, mime: mime, size: size}, nil
 }
-
-func (s *Server) removeFiles(files []savedFile) {
-	for _, f := range files {
-		os.Remove(filepath.Join(s.cfg.UploadDir, filepath.FromSlash(f.rel)))
-	}
-}
-
-func mediaURL(rel string) string { return "/uploads/" + rel }

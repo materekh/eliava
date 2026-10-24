@@ -110,7 +110,7 @@ func (s *Server) attachPostMedia(ctx context.Context, posts []Post) error {
 		if err := rows.Scan(&postID, &m.ID, &m.Kind, &rel); err != nil {
 			return err
 		}
-		m.URL = mediaURL(rel)
+		m.URL = s.mediaURL(rel)
 		posts[index[postID]].Media = append(posts[index[postID]].Media, m)
 	}
 	return rows.Err()

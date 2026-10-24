@@ -101,11 +101,22 @@ func main() {
 			BaseURL: os.Getenv("AI_BASE_URL"),
 			Model:   os.Getenv("AI_MODEL"),
 		},
+		Storage: server.SupabaseStorage{
+			URL:        os.Getenv("SUPABASE_URL"),
+			ServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
+			Bucket:     env("SUPABASE_BUCKET", "media"),
+		},
 	}
 	for i := range cfg.AllowedOrigins {
 		cfg.AllowedOrigins[i] = strings.TrimSpace(cfg.AllowedOrigins[i])
 	}
-	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
+	if cfg.Storage.Enabled() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		if err := cfg.Storage.EnsureBucket(ctx); err != nil {
+			log.Fatalf("Supabase Storage: %v", err)
+		}
+		cancel()
+	} else if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
 		log.Fatalf("Could not create upload dir: %v", err)
 	}
 
@@ -115,6 +126,6 @@ func main() {
 		Handler:           server.New(pool, cfg).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	log.Printf("Eliava API running on %s (payments: %s, AI: %t, web: %q)", addr, cfg.PaymentsMode, cfg.AI.APIKey != "", cfg.WebDir)
+	log.Printf("Eliava API running on %s (payments: %s, AI: %t, Supabase storage: %t, web: %q)", addr, cfg.PaymentsMode, cfg.AI.APIKey != "", cfg.Storage.Enabled(), cfg.WebDir)
 	log.Fatal(srv.ListenAndServe())
 }
