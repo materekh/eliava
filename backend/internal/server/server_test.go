@@ -36,8 +36,11 @@ func newTestServer(t *testing.T) *httptest.Server {
 	if err := Migrate(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
+	if err := BootstrapAdmin(ctx, pool, "admin@example.com", "admin-secret-123"); err != nil {
+		t.Fatal(err)
+	}
 	srv := New(pool, Config{
-		UploadDir: t.TempDir(), AdminEmail: "admin@example.com", PaymentsMode: "mock", TermsVersion: "test",
+		UploadDir: t.TempDir(), DisableRateLimit: true, PaymentsMode: "mock", TermsVersion: "test",
 		RegistrationFee: 2000, RegistrationDays: 30, RevealPrice: 200, DeliveryFee: 500, BoostDays: 30,
 	})
 	ts := httptest.NewServer(srv.Handler())
@@ -119,6 +122,16 @@ func register(t *testing.T, base, role, email string) *client {
 	return c
 }
 
+func login(t *testing.T, base, email, password string) *client {
+	c := &client{t: t, base: base}
+	var out struct {
+		Token string `json:"token"`
+	}
+	c.do("POST", "/api/auth/login", map[string]any{"email": email, "password": password}, http.StatusOK, &out)
+	c.token = out.Token
+	return c
+}
+
 func (c *client) payRegistration() {
 	c.do("POST", "/api/wallet/topup", map[string]any{"amountTetri": 10000}, http.StatusOK, nil)
 	c.do("POST", "/api/registration/pay", nil, http.StatusOK, nil)
@@ -141,7 +154,7 @@ func TestRepairFlow(t *testing.T) {
 	customer := register(t, ts.URL, "customer", "cust@example.com")
 	tech := register(t, ts.URL, "technician", "tech@example.com")
 	far := register(t, ts.URL, "technician", "far@example.com")
-	admin := register(t, ts.URL, "customer", "admin@example.com")
+	admin := login(t, ts.URL, "admin@example.com", "admin-secret-123")
 	ac := categoryID(t, customer, "air-conditioner")
 
 	// Unpaid technicians are hidden from search.
@@ -195,7 +208,8 @@ func TestRepairFlow(t *testing.T) {
 
 	var nearby []Post
 	tech.do("GET", "/api/posts/nearby", nil, http.StatusOK, &nearby)
-	if len(nearby) != 1 || nearby[0].ID != post.ID || nearby[0].Contact != nil {
+	if len(nearby) != 1 || nearby[0].ID != post.ID || nearby[0].Contact != nil || nearby[0].Address != "" ||
+		nearby[0].Location.Lat*100 != float64(int64(nearby[0].Location.Lat*100)) {
 		t.Fatalf("nearby posts: %+v", nearby)
 	}
 	far.do("GET", "/api/posts/nearby", nil, http.StatusOK, &nearby)
