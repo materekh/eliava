@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -106,4 +107,47 @@ func TestDeleteAccount(t *testing.T) {
 	u.do("GET", "/api/me", nil, http.StatusUnauthorized, nil)
 	c := &client{t: t, base: ts.URL}
 	c.do("POST", "/api/auth/login", map[string]any{"email": "leaver@example.com", "password": "secret123"}, http.StatusUnauthorized, nil)
+}
+
+func TestNormalizePhone(t *testing.T) {
+	ok := map[string]string{
+		"+995 555 123 456":   "+995 555 12 34 56",
+		"555123456":          "+995 555 12 34 56",
+		"00995 599-11-22-33": "+995 599 11 22 33",
+		"(032) 2 11 22 33":   "+995 322 11 22 33",
+	}
+	for in, want := range ok {
+		if got, err := normalizePhone(in); err != nil || got != want {
+			t.Errorf("normalizePhone(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+	for _, in := range []string{"12345", "+1 202 555 0143", "655123456", "555 12a 456"} {
+		if _, err := normalizePhone(in); err == nil {
+			t.Errorf("normalizePhone(%q) accepted", in)
+		}
+	}
+}
+
+func TestReports(t *testing.T) {
+	ts := newTestServer(t)
+	customer := register(t, ts.URL, "customer", "reporter@example.com")
+	tech := register(t, ts.URL, "technician", "reported@example.com")
+	var me User
+	tech.do("GET", "/api/me", nil, http.StatusOK, &me)
+	tech.do("POST", "/api/reports", map[string]any{"targetType": "user", "targetId": me.ID, "reason": "fake"}, http.StatusBadRequest, nil)
+	customer.do("POST", "/api/reports", map[string]any{"targetType": "user", "targetId": me.ID, "reason": "nope"}, http.StatusBadRequest, nil)
+	customer.do("POST", "/api/reports", map[string]any{"targetType": "listing", "targetId": 999999, "reason": "scam"}, http.StatusNotFound, nil)
+	customer.do("POST", "/api/reports", map[string]any{"targetType": "user", "targetId": me.ID, "reason": "unsafe", "details": "Did not show up, asked for money upfront"}, http.StatusCreated, nil)
+	customer.do("GET", "/api/admin/reports", nil, http.StatusForbidden, nil)
+	admin := login(t, ts.URL, "admin@example.com", "admin-secret-123")
+	var list []Report
+	admin.do("GET", "/api/admin/reports", nil, http.StatusOK, &list)
+	if len(list) != 1 || list[0].Reason != "unsafe" || list[0].ReportCount != 1 || list[0].TargetType != "user" {
+		t.Fatalf("reports: %+v", list)
+	}
+	admin.do("POST", fmt.Sprintf("/api/admin/reports/%d/resolve", list[0].ID), nil, http.StatusOK, nil)
+	admin.do("GET", "/api/admin/reports", nil, http.StatusOK, &list)
+	if len(list) != 0 {
+		t.Fatalf("resolved report still listed: %+v", list)
+	}
 }

@@ -102,6 +102,9 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/boosts", s.authed(s.buyBoost, "technician", "seller"))
 	m.HandleFunc("GET /api/leaderboard", pub(s.leaderboard))
 
+	m.HandleFunc("POST /api/reports", s.authed(s.createReport))
+	m.HandleFunc("GET /api/admin/reports", s.authed(s.adminReports, "admin"))
+	m.HandleFunc("POST /api/admin/reports/{id}/resolve", s.authed(s.adminResolveReport, "admin"))
 	m.HandleFunc("GET /api/admin/reveals", s.authed(s.adminReveals, "admin"))
 	m.HandleFunc("GET /api/admin/flagged-posts", s.authed(s.adminFlaggedPosts, "admin"))
 	m.HandleFunc("POST /api/admin/stalls", s.authed(s.adminCreateStall, "admin"))

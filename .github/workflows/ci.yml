@@ -33,4 +33,4 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://postgres:devpass@localhost:5432/eliava_test
       - name: JS syntax
-        run: node --check ../web/app.js && node --check ../web/config.js
+        run: node --check ../web/i18n.js && node --check ../web/app.js && node --check ../web/config.js

@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -104,22 +103,32 @@ func (s *Server) newSession(r *http.Request, userID int64) (string, error) {
 	return token, err
 }
 
+// normalizePhone accepts Georgian numbers (mobile 5XX, landline 3X/4X) with or without +995 and formats them
+// as "+995 5XX XX XX XX".
 func normalizePhone(phone string) (string, error) {
-	phone = strings.TrimSpace(phone)
-	digits := 0
-	for i, c := range phone {
+	var b strings.Builder
+	for i, c := range strings.TrimSpace(phone) {
 		switch {
-		case unicode.IsDigit(c):
-			digits++
-		case c == '+' && i == 0, c == ' ', c == '-':
+		case c >= '0' && c <= '9':
+			b.WriteRune(c)
+		case c == '+' && i == 0, c == ' ', c == '-', c == '(', c == ')':
 		default:
 			return "", badRequest("Phone number may only contain digits, spaces, dashes and a leading +")
 		}
 	}
-	if digits < 9 || digits > 15 {
-		return "", badRequest("Enter a valid phone number")
+	d := b.String()
+	switch {
+	case strings.HasPrefix(d, "00995"):
+		d = d[5:]
+	case strings.HasPrefix(d, "995") && len(d) == 12:
+		d = d[3:]
+	case strings.HasPrefix(d, "0") && len(d) == 10:
+		d = d[1:]
 	}
-	return phone, nil
+	if len(d) != 9 || !strings.ContainsRune("345", rune(d[0])) {
+		return "", badRequest("Enter a Georgian phone number, e.g. +995 555 12 34 56")
+	}
+	return "+995 " + d[:3] + " " + d[3:5] + " " + d[5:7] + " " + d[7:], nil
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) error {
