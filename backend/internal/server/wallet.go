@@ -11,6 +11,9 @@ import (
 
 // charge deducts from the user's wallet inside tx, failing with 402 if the balance is too low.
 func charge(ctx context.Context, tx pgx.Tx, userID, amount int64, reason, ref string) error {
+	if amount <= 0 {
+		return nil
+	}
 	tag, err := tx.Exec(ctx, `UPDATE users SET balance_tetri = balance_tetri - $2 WHERE id = $1 AND balance_tetri >= $2`, userID, amount)
 	if err != nil {
 		return err
@@ -53,7 +56,7 @@ func (s *Server) wallet(w http.ResponseWriter, r *http.Request, u *User) error {
 // topUp adds money to the wallet. Only the "mock" payments mode exists until a real payment provider is connected.
 func (s *Server) topUp(w http.ResponseWriter, r *http.Request, u *User) error {
 	if s.cfg.PaymentsMode != "mock" {
-		return errStatus(http.StatusNotImplemented, "Online payments are not connected yet")
+		return errStatus(http.StatusForbidden, "Online payments are not connected yet")
 	}
 	var in struct {
 		AmountTetri int64 `json:"amountTetri"`
@@ -104,6 +107,9 @@ func (s *Server) payRegistration(w http.ResponseWriter, r *http.Request, u *User
 }
 
 func (s *Server) buyBoost(w http.ResponseWriter, r *http.Request, u *User) error {
+	if s.cfg.PaymentsMode == "free" {
+		return errStatus(http.StatusForbidden, "Promoted placement opens when online payments launch")
+	}
 	var in struct {
 		AmountTetri int64 `json:"amountTetri"`
 	}

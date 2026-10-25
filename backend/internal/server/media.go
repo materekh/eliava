@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -106,8 +107,21 @@ func (s *Server) saveUpload(ctx context.Context, h *multipart.FileHeader, sub st
 	if _, err := rand.Read(b); err != nil {
 		return savedFile{}, err
 	}
-	key := sub + "/" + hex.EncodeToString(b) + info.ext
-	size, err := s.storeFile(ctx, key, mime, src, h.Size, limit)
+	var body io.Reader = src
+	size, ext := h.Size, info.ext
+	if info.kind == "image" {
+		data, err := io.ReadAll(io.LimitReader(src, limit))
+		if err != nil {
+			return savedFile{}, err
+		}
+		clean, cleanMime, cleanExt, err := cleanImage(data, mime)
+		if err != nil {
+			return savedFile{}, err
+		}
+		body, size, mime, ext = bytes.NewReader(clean), int64(len(clean)), cleanMime, cleanExt
+	}
+	key := sub + "/" + hex.EncodeToString(b) + ext
+	size, err = s.storeFile(ctx, key, mime, body, size, limit)
 	if err != nil {
 		return savedFile{}, err
 	}

@@ -52,6 +52,9 @@ func (s *Server) authed(h authedHandler, roles ...string) http.HandlerFunc {
 			writeError(w, err)
 			return
 		}
+		if s.cfg.PaymentsMode == "free" && (u.Role == "technician" || u.Role == "seller") {
+			u.RegistrationActive = true
+		}
 		if len(roles) > 0 && u.Role != "admin" && !slices.Contains(roles, u.Role) {
 			writeError(w, errStatus(http.StatusForbidden, "This action is only for %s accounts", strings.Join(roles, " / ")))
 			return
@@ -120,6 +123,9 @@ func normalizePhone(phone string) (string, error) {
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) error {
+	if err := s.limit("register:"+clientIP(r), 20, time.Hour); err != nil {
+		return err
+	}
 	var in struct {
 		Role        string `json:"role"`
 		Name        string `json:"name"`
@@ -157,9 +163,6 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	role := in.Role
-	if s.cfg.AdminEmail != "" && strings.EqualFold(email, s.cfg.AdminEmail) {
-		role = "admin"
-	}
 
 	var u *User
 	err = pgx.BeginFunc(r.Context(), s.db, func(tx pgx.Tx) error {
@@ -195,11 +198,17 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) error {
+	if err := s.limit("login-ip:"+clientIP(r), 30, time.Minute); err != nil {
+		return err
+	}
 	var in struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 	if err := decodeJSON(w, r, &in); err != nil {
+		return err
+	}
+	if err := s.limit("login:"+strings.ToLower(strings.TrimSpace(in.Email)), 10, 15*time.Minute); err != nil {
 		return err
 	}
 	var id int64
