@@ -63,3 +63,6 @@ cd backend && TEST_DATABASE_URL=postgres://postgres:devpass@localhost:5432/eliav
 - Phone number verification by SMS.
 - Delivery is a flat fee handled by the seller/courier manually.
 - Terms & Conditions are a draft and need review by a Georgian lawyer.
+
+## Languages
+The site is in Georgian by default, with an English switch in the header (saved in `localStorage`). UI text is written in English in `web/app.js` as `t("English text", {vars})`, and the Georgian versions live in the `KA` table in `web/i18n.js`. Add a `KA` entry for every new string; a string without one shows in English. API error messages are translated in the browser with `tErr()`. The terms are in `web/terms-ka.html` (Georgian) and `web/terms.html` (English).
