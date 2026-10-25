@@ -160,7 +160,7 @@ async function technicians(params) {
     markers = list.filter(t => t.location).map(t => L.circleMarker([t.location.lat, t.location.lng], { radius: 8, color: "#0e7c66" }).addTo(picker.map).bindPopup(esc(t.name)));
     $("#results").innerHTML = list.length ? list.map(t => `
       <div class="card">
-        <h3>${esc(t.name)} ${t.boostTetri > 0 ? `<span class="badge top">★ Top</span>` : ""}</h3>
+        <h3>${esc(t.name)} ${t.boostTetri > 0 ? `<span class="badge top">Promoted</span>` : ""}</h3>
         <div>${t.categories.map(c => `<span class="badge">${esc(c.name)}</span>`).join("")}</div>
         <p class="muted">${esc(t.city)}${t.distanceKm != null ? ` · ${t.distanceKm.toFixed(1)} km away` : ""} · works within ${t.serviceRadiusKm} km</p>
         <p>${esc(t.bio)}</p>
@@ -225,7 +225,7 @@ function postCard(p, mode) {
   } else if (mode === "tech") {
     actions = p.contact
       ? `<p><strong>${esc(p.contact.name)}</strong> · <a href="tel:${esc(p.contact.phone)}">📞 ${esc(p.contact.phone)}</a>${p.address ? `<br><span class="muted">${esc(p.address)}</span>` : ""}</p>`
-      : `<button class="accent" data-reveal="${p.id}">View number (${gel(S.config.revealPrice)})</button>`;
+      : `<button class="accent" data-reveal="${p.id}">View number (${S.config.revealPrice ? gel(S.config.revealPrice) : "free"})</button>`;
   }
   return `<div class="card">
     <h3>${esc(p.title)}</h3>
@@ -280,7 +280,7 @@ function listingCard(l) {
   const stall = l.seller.stallCode ? `<a href="#/eliava?stall=${l.seller.stallId}" class="badge">Eliava stall ${esc(l.seller.stallCode)}</a>` : "";
   return `<div class="card">
     ${img ? `<img class="cover" src="${esc(mediaURL(img.url))}" alt="">` : `<div class="cover"></div>`}
-    <h3>${esc(l.title)} ${l.boostTetri > 0 ? `<span class="badge top">★ Top</span>` : ""}</h3>
+    <h3>${esc(l.title)} ${l.boostTetri > 0 ? `<span class="badge top">Promoted</span>` : ""}</h3>
     <div><span class="badge">${esc(l.category.name)}</span>${stall}</div>
     <p class="muted">${esc(l.description)}</p>
     <p><span class="price">${gel(l.priceTetri)}</span> <span class="muted">· ${l.stock} in stock</span></p>
@@ -289,8 +289,9 @@ function listingCard(l) {
     <form class="stack" id="order-${l.id}" hidden style="margin-top:10px">
       <div class="row"><div><label>Quantity</label><input name="quantity" type="number" min="1" max="${l.stock}" value="1"></div></div>
       <label class="check"><input type="checkbox" name="delivery"> Deliver to my home (+${gel(S.config.deliveryFee)})</label>
+      <p class="muted small">Delivery: Tbilisi only, parcels up to 20 kg. Large appliances: arrange transport with the seller. You pay the seller the item price × quantity (+ delivery fee) in cash on delivery or at pickup.</p>
       <input name="deliveryAddress" placeholder="Delivery address">
-      <button type="submit">Place order (pay on delivery / pickup)</button>
+      <button type="submit">Place order: I will pay on delivery / pickup</button>
     </form>
   </div>`;
 }
@@ -452,13 +453,13 @@ async function account() {
     <div class="grid-3">
       <div class="card"><h3>${esc(u.name)}</h3><p class="muted">${esc(u.email)} · ${esc(u.phone)}<br>Account type: ${esc(u.role)}</p></div>
       <div class="card"><h3>Wallet: ${gel(u.balanceTetri)}</h3>
-        <form class="row" id="topup"><div><label>Top up (₾)</label><input name="amount" type="number" min="1" max="1000" value="20"></div><div><button>Top up</button></div></form>
-        ${S.config.paymentsMode === "mock" ? `<p class="muted small">Test mode: no real money is charged.</p>` : ""}</div>
+        ${S.config.paymentsMode === "mock" ? `<form class="row" id="topup"><div><label>Top up (₾)</label><input name="amount" type="number" min="1" max="1000" value="20"></div><div><button>Top up</button></div></form>
+        <p class="muted small">Test mode: no real money is charged.</p>` : S.config.paymentsMode === "free" ? `<p class="muted small">Free beta: registration and viewing numbers are free. No payments are taken.</p>` : ""}</div>
       ${pro ? `<div class="card"><h3>Registration</h3>
         <p>${u.registrationActive ? `<span class="badge ok">Active</span> until ${when(u.registrationPaidUntil)}` : `<span class="badge warn">Not paid</span> — you're hidden from customers`}</p>
-        <button id="reg">Pay ${gel(S.config.registrationFee)} for ${S.config.registrationDays} days</button></div>` : ""}
+        ${S.config.paymentsMode === "free" ? "" : `<button id="reg">Pay ${gel(S.config.registrationFee)} for ${S.config.registrationDays} days</button>`}</div>` : ""}
     </div>
-    ${pro ? `<div class="card" style="margin-top:14px"><h3>Leaderboard boost</h3>
+    ${pro && S.config.paymentsMode !== "free" ? `<div class="card" style="margin-top:14px"><h3>Leaderboard boost</h3>
       <p class="muted">Your active boost: ${gel(w.activeBoostTetri)}. Current #1 has ${gel(topAmount)} — pay more than that to get to the top for ${S.config.boostDays} days.</p>
       <form class="row" id="boost"><div><label>Boost amount (₾)</label><input name="amount" type="number" min="1" value="${Math.max(5, Math.floor((topAmount - w.activeBoostTetri) / 100) + 1)}"></div><div><button class="accent">Boost</button></div></form></div>` : ""}
     ${tp ? `<form class="card stack" id="tp" style="margin-top:14px"><h3>Technician profile</h3>
@@ -474,6 +475,17 @@ async function account() {
   bind("#topup", "submit", (e, f) => act(async () => { await api("POST", "/api/wallet/topup", { amountTetri: Math.round(+f.amount.value * 100) }); account(); }, "Wallet topped up"));
   $("#reg")?.addEventListener("click", () => act(async () => { await api("POST", "/api/registration/pay"); account(); }, "Registration paid"));
   bind("#boost", "submit", (e, f) => act(async () => { await api("POST", "/api/boosts", { amountTetri: Math.round(+f.amount.value * 100) }); account(); }, "Boost active!"));
+  if (u.role !== "admin") {
+    app().insertAdjacentHTML("beforeend", `<form class="card stack" id="del" style="margin-top:14px;max-width:520px"><h3>Delete my account</h3>
+      <p class="muted small">Removes your name, email, phone, photos, profile and open requests. Orders and payment records are kept without your personal details.</p>
+      <div><label>Password</label><input name="password" type="password" required autocomplete="current-password"></div>
+      <div><button class="secondary">Delete my account</button></div></form>`);
+    bind("#del", "submit", (e, f) => act(async () => {
+      if (!confirm("Delete your account permanently? This can't be undone.")) return;
+      await api("DELETE", "/api/me", { password: f.password.value });
+      setSession("", null); go("#/"); flash("Your account was deleted");
+    }));
+  }
   if (tp) {
     const picker = pickerMap($("#map"), loc, p => { loc = p; });
     $("#locate").onclick = () => picker.locate();
@@ -491,9 +503,9 @@ async function leaderboard(params) {
   const role = params.get("role") === "seller" ? "seller" : "technician";
   const b = await api("GET", "/api/leaderboard?role=" + role);
   app().innerHTML = `<h1>Leaderboard</h1>
-    <div class="tabs"><button class="${role === "technician" ? "on" : ""}" onclick="go('#/leaderboard?role=technician')">Technicians</button>
-      <button class="${role === "seller" ? "on" : ""}" onclick="go('#/leaderboard?role=seller')">Sellers</button></div>
-    <p class="muted">Ranked by boost paid in the last ${b.boostDays} days. Boosted ${role}s appear first in search. Want to be #1? Pay more than the current top on your <a href="#/account">Account</a> page.</p>
+    <div class="tabs"><button class="${role === "technician" ? "on" : ""}" data-go="#/leaderboard?role=technician">Technicians</button>
+      <button class="${role === "seller" ? "on" : ""}" data-go="#/leaderboard?role=seller">Sellers</button></div>
+    <p class="muted">${S.config.paymentsMode === "free" ? "Promoted placement opens when online payments launch. During the free beta nobody can pay to be first." : `Ranked by boost paid in the last ${b.boostDays} days. Boosted ${role}s appear first in search and are labelled “Promoted”. Want to be #1? Pay more than the current top on your <a href="#/account">Account</a> page.`}</p>
     <table><tr><th>#</th><th>Name</th><th></th><th>Boost</th></tr>
       ${b.entries.map(e => `<tr><td>${e.rank}</td><td><strong>${esc(e.name)}</strong></td><td class="muted">${esc(e.detail)}</td><td>${gel(e.boostTetri)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Nobody has boosted yet.</td></tr>`}</table>`;
 }
@@ -566,3 +578,5 @@ window.addEventListener("hashchange", render);
   await refreshMe();
   render();
 })();
+
+document.addEventListener("click", e => { const el = e.target.closest("[data-go]"); if (el) go(el.dataset.go); });

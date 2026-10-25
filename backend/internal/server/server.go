@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -24,7 +25,6 @@ type Config struct {
 	AllowedOrigins   []string
 	UploadDir        string
 	WebDir           string
-	AdminEmail       string
 	PaymentsMode     string
 	TermsVersion     string
 	RegistrationFee  int64
@@ -32,6 +32,7 @@ type Config struct {
 	RevealPrice      int64
 	DeliveryFee      int64
 	BoostDays        int
+	DisableRateLimit bool
 	AI               AIConfig
 	Storage          SupabaseStorage
 }
@@ -41,15 +42,19 @@ type Server struct {
 	cfg Config
 	ai  *AIClient
 	mux *http.ServeMux
+	rl  *rateLimiter
 }
 
 func New(db *pgxpool.Pool, cfg Config) *Server {
-	s := &Server{db: db, cfg: cfg, ai: NewAIClient(cfg.AI), mux: http.NewServeMux()}
+	if cfg.PaymentsMode == "free" {
+		cfg.RegistrationFee, cfg.RevealPrice = 0, 0
+	}
+	s := &Server{db: db, cfg: cfg, ai: NewAIClient(cfg.AI), mux: http.NewServeMux(), rl: newRateLimiter()}
 	s.routes()
 	return s
 }
 
-func (s *Server) Handler() http.Handler { return s.cors(s.mux) }
+func (s *Server) Handler() http.Handler { return securityHeaders(s.cors(s.mux)) }
 
 func (s *Server) routes() {
 	m := s.mux
@@ -61,6 +66,7 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/auth/login", pub(s.login))
 	m.HandleFunc("POST /api/auth/logout", s.authed(s.logout))
 	m.HandleFunc("GET /api/me", s.authed(s.me))
+	m.HandleFunc("DELETE /api/me", s.authed(s.deleteAccount))
 
 	m.HandleFunc("GET /api/me/technician-profile", s.authed(s.getTechnicianProfile, "technician"))
 	m.HandleFunc("PUT /api/me/technician-profile", s.authed(s.putTechnicianProfile, "technician"))
@@ -103,7 +109,7 @@ func (s *Server) routes() {
 
 	m.Handle("GET /uploads/", http.StripPrefix("/uploads/", noListing(http.FileServer(http.Dir(s.cfg.UploadDir)))))
 	if s.cfg.WebDir != "" {
-		m.Handle("GET /", http.FileServer(http.Dir(s.cfg.WebDir)))
+		m.Handle("GET /", s.webHandler())
 	}
 }
 
@@ -142,7 +148,7 @@ func (s *Server) cors(next http.Handler) http.Handler {
 		if origin != "" && (slices.Contains(s.cfg.AllowedOrigins, origin) || slices.Contains(s.cfg.AllowedOrigins, "*")) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		}
 		if r.Method == http.MethodOptions {
@@ -318,3 +324,41 @@ func Migrate(ctx context.Context, db *pgxpool.Pool) error {
 }
 
 func ensureDir(dir string) error { return os.MkdirAll(dir, 0o755) }
+
+const contentSecurityPolicy = "default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; " +
+	"img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https:; font-src 'self' data:; " +
+	"object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		h.Set("Permissions-Policy", "geolocation=(self), camera=(), microphone=()")
+		h.Set("Content-Security-Policy", contentSecurityPolicy)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// webHandler serves the static site and answers unknown paths with 404.html.
+func (s *Server) webHandler() http.Handler {
+	files := http.FileServer(http.Dir(s.cfg.WebDir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := path.Clean("/" + r.URL.Path)
+		if p != "/" {
+			if _, err := os.Stat(filepath.Join(s.cfg.WebDir, filepath.FromSlash(p))); err != nil {
+				body, err := os.ReadFile(filepath.Join(s.cfg.WebDir, "404.html"))
+				if err != nil {
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write(body)
+				return
+			}
+		}
+		files.ServeHTTP(w, r)
+	})
+}

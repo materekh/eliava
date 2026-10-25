@@ -35,11 +35,12 @@ Open http://localhost:8080.
 | --- | --- | --- |
 | `DATABASE_URL` | — | Postgres URL (Supabase/Neon). If empty, `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_NAME`/`DB_PASSWORD` are used |
 | `PORT` | `8080` | HTTP port |
-| `ADMIN_EMAIL` | — | The account with this email becomes admin |
+| `ADMIN_EMAIL` | — | Admin account email. Only used together with `ADMIN_PASSWORD` |
+| `ADMIN_PASSWORD` | — | 12–72 characters. On startup the `ADMIN_EMAIL` account is created (or taken over, logging out its sessions) with this password and made admin. Signing up with the admin email never grants admin |
 | `ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:8080` | Sites allowed to call the API (add your Vercel URL) |
 | `UPLOAD_DIR` | `uploads` | Where photos/videos are stored |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET` | —, —, `media` | If set, photos/videos go to this public Supabase Storage bucket (created automatically) instead of `UPLOAD_DIR`. Needed on hosts that wipe the disk, like Render free |
-| `PAYMENTS_MODE` | `mock` | `mock` = test top-ups with fake money. Anything else disables top-ups until a real provider is connected |
+| `PAYMENTS_MODE` | `free` | `free` = beta: registration and number views cost nothing, top-ups and boosts are off. `mock` = local testing with fake top-up money (never in production) |
 | `REGISTRATION_FEE_TETRI` / `REGISTRATION_DAYS` | `2000` / `30` | Technician/seller registration: 20 GEL per 30 days |
 | `REVEAL_PRICE_TETRI` | `200` | Price for a technician to view a customer's number (2 GEL) |
 | `DELIVERY_FEE_TETRI` | `500` | Delivery fee (5 GEL) |

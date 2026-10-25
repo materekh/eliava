@@ -76,10 +76,11 @@ func main() {
 		log.Fatalf("Could not migrate database: %v", err)
 	}
 	adminEmail := strings.ToLower(env("ADMIN_EMAIL", ""))
-	if adminEmail != "" {
-		if _, err := pool.Exec(ctx, `UPDATE users SET role = 'admin' WHERE email = $1`, adminEmail); err != nil {
-			log.Fatalf("Could not set admin: %v", err)
-		}
+	if err := server.BootstrapAdmin(ctx, pool, adminEmail, os.Getenv("ADMIN_PASSWORD")); err != nil {
+		log.Fatalf("Could not set up admin: %v", err)
+	}
+	if adminEmail != "" && os.Getenv("ADMIN_PASSWORD") == "" {
+		log.Printf("ADMIN_EMAIL is set without ADMIN_PASSWORD: no admin account was created or promoted")
 	}
 	cancel()
 	defer pool.Close()
@@ -88,8 +89,7 @@ func main() {
 		AllowedOrigins:   strings.Split(env("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080"), ","),
 		UploadDir:        env("UPLOAD_DIR", "uploads"),
 		WebDir:           env("WEB_DIR", defaultWebDir()),
-		AdminEmail:       adminEmail,
-		PaymentsMode:     env("PAYMENTS_MODE", "mock"),
+		PaymentsMode:     env("PAYMENTS_MODE", "free"),
 		TermsVersion:     env("TERMS_VERSION", "2026-10-draft"),
 		RegistrationFee:  envInt("REGISTRATION_FEE_TETRI", 2000),
 		RegistrationDays: int(envInt("REGISTRATION_DAYS", 30)),

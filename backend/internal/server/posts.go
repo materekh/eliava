@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,6 +72,15 @@ func scanPost(row pgx.Row, viewer *User) (Post, error) {
 	}
 	if owner || p.Revealed {
 		p.Contact = &contact
+	} else {
+		// Until a technician views the number, show only the rough area (~1 km), never the exact home.
+		p.Address = ""
+		p.Location.Lat = math.Round(p.Location.Lat*100) / 100
+		p.Location.Lng = math.Round(p.Location.Lng*100) / 100
+		if p.DistanceKM != nil {
+			d := math.Max(1, math.Ceil(*p.DistanceKM))
+			p.DistanceKM = &d
+		}
 	}
 	return p, nil
 }
@@ -117,6 +127,9 @@ func (s *Server) attachPostMedia(ctx context.Context, posts []Post) error {
 }
 
 func (s *Server) createPost(w http.ResponseWriter, r *http.Request, u *User) error {
+	if err := s.limitUser(u, "post", 10, 24*time.Hour); err != nil {
+		return err
+	}
 	if err := parseMultipart(w, r); err != nil {
 		return err
 	}
@@ -291,6 +304,9 @@ func (s *Server) getPost(w http.ResponseWriter, r *http.Request, u *User) error 
 
 // revealContact charges the technician once per post and records who viewed the customer's number.
 func (s *Server) revealContact(w http.ResponseWriter, r *http.Request, u *User) error {
+	if err := s.limitUser(u, "reveal", 60, time.Hour); err != nil {
+		return err
+	}
 	id, err := pathID(r)
 	if err != nil {
 		return err

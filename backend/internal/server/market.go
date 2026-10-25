@@ -237,6 +237,9 @@ func (s *Server) myListings(w http.ResponseWriter, r *http.Request, u *User) err
 }
 
 func (s *Server) createListing(w http.ResponseWriter, r *http.Request, u *User) error {
+	if err := s.limitUser(u, "listing", 100, 24*time.Hour); err != nil {
+		return err
+	}
 	if !u.RegistrationActive {
 		return errStatus(http.StatusPaymentRequired, "Pay the seller registration fee to post listings")
 	}
@@ -371,6 +374,9 @@ func (s *Server) queryOrders(ctx context.Context, where string, args ...any) ([]
 }
 
 func (s *Server) createOrder(w http.ResponseWriter, r *http.Request, u *User) error {
+	if err := s.limitUser(u, "order", 30, time.Hour); err != nil {
+		return err
+	}
 	var in struct {
 		ListingID       int64  `json:"listingId"`
 		Quantity        int    `json:"quantity"`
