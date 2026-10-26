@@ -123,7 +123,7 @@ a.badge:hover { background: #e2e8f0; }
 .badge.top { background: #fff4d6; color: #93370d; font-weight: 700; }
 .badge.warn { background: #fee4e2; color: #b42318; }
 .badge.ok { background: #dcfae6; color: #067647; }
-.badge.beta { background: rgba(255, 255, 255, .14); color: #fff; font-size: 13px; padding: 4px 12px; white-space: normal; overflow: visible; }
+.badge.beta { background: rgba(255, 255, 255, .14); color: #fff; font-size: 13px; padding: 4px 12px; white-space: normal; overflow: visible; border-radius: 12px; }
 .price { font-size: 20px; font-weight: 800; }
 .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 14px; margin: 8px 0; }
 .meta span { display: inline-flex; align-items: center; gap: 5px; }
