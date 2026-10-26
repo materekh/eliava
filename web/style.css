@@ -340,3 +340,6 @@ header.top .navrow nav a.active { color: var(--blue); font-weight: 600; box-shad
   .req-est small { display: inline; margin-right: 6px; }
 }
 @media (min-width: 1100px) { .tiles { grid-template-columns: repeat(9, minmax(0, 1fr)); } .tile { font-size: .8125rem; overflow-wrap: anywhere; } }
+a.req { color: var(--ink); text-decoration: none; }
+a.req:hover { background: var(--soft); }
+a.req:hover strong { color: var(--blue); text-decoration: underline; }

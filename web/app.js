@@ -285,9 +285,9 @@ async function home() {
   const count = slug => stats.find(x => x.slug === slug)?.technicians || 0;
   const bySlug = slug => S.cats.find(c => c.slug === slug);
   const tiles = cats("repair").map(c => `<a class="tile" href="#/technicians?category=${esc(c.slug)}">${icon(CAT_ICON[c.slug] || "wrench")}<span>${esc(catShort(c))}</span><small>${t("{n} technicians", { n: count(c.slug) })}</small></a>`).join("");
-  const reqs = recent.length ? `<div class="feed">${recent.map(p => `<div class="req"><span class="req-icon">${icon(CAT_ICON[p.category] || "wrench")}</span>
+  const reqs = recent.length ? `<div class="feed">${recent.map(p => `<a class="req" href="#/request?id=${p.id}"><span class="req-icon">${icon(CAT_ICON[p.category] || "wrench")}</span>
       <div><strong>${esc(p.title)}</strong><div class="meta"><span>${icon("pin")} ${esc(t("area:" + p.area))}</span><span>${ago(p.createdAt)}</span><span>${icon("eye")} ${t("{n} technicians viewed", { n: p.views })}</span></div></div>
-      <div class="req-est"><small>${t("Estimate")}</small><b>${gel(p.minTetri).replace(" ₾", "")}–${gel(p.maxTetri)}</b></div></div>`).join("")}</div>`
+      <div class="req-est"><small>${t("Estimate")}</small><b>${gel(p.minTetri).replace(" ₾", "")}–${gel(p.maxTetri)}</b></div></a>`).join("")}</div>`
     : emptyState(t("No open requests yet. Post yours and nearby technicians will see it."), `<a class="btn" href="#/post">${t("Add a request")}</a>`, "post");
   const near = techs.slice(0, 4).map(x => `<a class="tech-row" href="#/technicians?category=${esc(x.categories[0]?.slug || "")}"><span class="avatar">${initials(x.name)}</span>
       <span><strong>${esc(x.name)}</strong><small>${esc(x.categories.map(catShort).join(", "))}</small></span>${x.distanceKm != null ? `<span class="km">${km(x.distanceKm)}</span>` : ""}</a>`).join("")
@@ -307,6 +307,21 @@ async function home() {
       </aside>
     </div>
     ${shelf ? `<section><div class="sec-head"><h2>${t("Parts from Eliava")}</h2><a href="#/market">${t("Go to the market")}</a></div><div class="shelf">${shelf}</div></section>` : ""}`;
+}
+
+async function requestPage(params) {
+  const p = (await api("GET", "/api/posts/recent")).find(x => String(x.id) === params.get("id"));
+  if (!p) { app().innerHTML = emptyState(t("This request is closed or no longer available."), `<a class="btn" href="#/">${t("Go to the home page")}</a>`, "post"); return; }
+  const cat = S.cats.find(c => c.slug === p.category);
+  const r = S.me?.role;
+  const action = r === "technician" ? `<a class="btn" href="#/jobs">${t("Open in Jobs near me to view the number")}</a>`
+    : !S.me ? `<a class="btn" href="#/login">${t("Log in as a technician to view the number")}</a><a class="btn secondary" href="#/register?role=technician">${joinLabel("technician")}</a>`
+    : `<a class="btn" href="#/post">${t("Add a similar request")}</a>`;
+  app().innerHTML = `<p><a href="#/">${t("Back to requests")}</a></p>
+    <div class="card"><span class="badge">${esc(catName(cat))}</span><h1>${esc(p.title)}</h1>
+      <div class="meta"><span>${icon("pin")} ${esc(t("area:" + p.area))}</span><span>${ago(p.createdAt)}</span><span>${icon("eye")} ${t("{n} technicians viewed", { n: p.views })}</span></div>
+      <p class="price">${gel(p.minTetri).replace(" ₾", "")}–${gel(p.maxTetri)}</p><p class="hint">${t("Only the area is public. The exact address and phone number stay hidden.")}</p>
+      <div class="actions mt">${action}</div></div>`;
 }
 
 async function technicians(params) {
@@ -774,8 +789,8 @@ function notFound() {
 }
 
 /* ---------- router ---------- */
-const routes = { "": home, technicians, post: newPost, "my-posts": myPosts, jobs, market, eliava, seller, orders, account, leaderboard, login, register, admin };
-const titles = { "": "", technicians: "Find a technician", post: "Post a problem", "my-posts": "My requests", jobs: "Jobs near me", market: "Parts market", eliava: "Eliava market map", seller: "My shop", orders: "My orders", account: "My account", leaderboard: "Leaderboard", login: "Log in", register: "Create account", admin: "Admin" };
+const routes = { "": home, request: requestPage, technicians, post: newPost, "my-posts": myPosts, jobs, market, eliava, seller, orders, account, leaderboard, login, register, admin };
+const titles = { "": "", request: "Repair request", technicians: "Find a technician", post: "Post a problem", "my-posts": "My requests", jobs: "Jobs near me", market: "Parts market", eliava: "Eliava market map", seller: "My shop", orders: "My orders", account: "My account", leaderboard: "Leaderboard", login: "Log in", register: "Create account", admin: "Admin" };
 // Renders are queued so a slow page can't overwrite the one the user navigated to next.
 let renderQueue = Promise.resolve();
 let navigated = false;
