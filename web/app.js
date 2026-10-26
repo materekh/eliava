@@ -29,6 +29,13 @@ const ICONS = {
   logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
   star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  fan: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7s3 4-2 6M14 12c4 0 7 1 7 4s-4 3-6-2M12 14c0 4-1 7-4 7s-3-4 2-6M10 12c-4 0-7-1-7-4s4-3 6 2"/>',
+  fridge: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M6 9h12M9 5v2M9 12v4"/>',
+  washer: '<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M8 5h2"/>',
+  tv: '<rect x="2" y="5" width="20" height="13" rx="2"/><path d="M8 22h8M12 18v4"/>',
+  plug: '<path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0zM12 18v4"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  drop: '<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/>',
 };
 function icon(name) {
   return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
@@ -232,8 +239,9 @@ function renderNav() {
   const cls = (h, extra = "") => `class="${[extra, h === cur ? "active" : ""].join(" ").trim()}"`;
   const main = [["#/technicians", "Find a technician"], ["#/market", "Market"], ["#/eliava", "Eliava map"]];
   $("#nav").setAttribute("aria-label", t("Main menu"));
-  $("#nav").innerHTML = main.map(([h, l]) => `<a href="${h}" ${cls(h)}${on(h)}>${t(l)}</a>`).join("") +
-    `<a href="${action[0]}" ${cls(action[0], "cta")}${on(action[0])}>${t(action[1])}</a>`;
+  $("#nav").innerHTML = [["#/", "Requests"], ...main].map(([h, l]) => `<a href="${h}" ${cls(h)}${on(h)}>${t(l)}</a>`).join("") +
+    (S.me ? "" : `<a href="#/register?role=technician">${t("Join as a technician")}</a>`);
+  $("#addbtn").href = action[0]; $("#addbtn").innerHTML = `${icon("plus")} <span>${t(r === "technician" || r === "seller" ? action[1] : "Add a request")}</span>`;
   const items = [];
   if (r === "customer" || r === "admin") items.push(["#/my-posts", "My requests", "list"]);
   if (r === "technician" || r === "admin") items.push(["#/jobs", "Jobs near me", "briefcase"]);
@@ -258,55 +266,47 @@ function renderNav() {
 }
 function applyStaticText() {
   document.documentElement.lang = LANG;
+  $("#beta").textContent = S.config.paymentsMode && !free() ? "" : t("Beta: posting, registration and opening a shop are free");
+  $("#topsearch").q.placeholder = t("What broke, or which part are you looking for?");
   $("#footer").innerHTML = `<div class="wrap"><span>© ${new Date().getFullYear()} ${t("Eliava marketplace")}</span>
     <nav aria-label="${esc(t("Footer"))}"><a href="${termsURL()}">${t("Terms & Conditions")}</a><a href="#/eliava">${t("Eliava map")}</a>${S.config.paymentsMode && !free() ? `<a href="#/leaderboard">${t("Leaderboard")}</a>` : ""}</nav></div>`;
 }
 async function refreshMe() { if (S.token) { S.me = await api("GET", "/api/me").catch(() => null); renderNav(); } }
 
 /* ---------- pages ---------- */
+const CAT_ICON = { "air-conditioner": "fan", refrigerator: "fridge", "washing-machine": "washer", dishwasher: "washer", "tv-electronics": "tv", "small-appliances": "plug", "phone-computer": "phone", electrical: "bolt", plumbing: "drop" };
+function ago(d) {
+  const m = Math.max(1, Math.round((Date.now() - new Date(d)) / 60000));
+  return m < 60 ? t("{n} min ago", { n: m }) : m < 1440 ? t("{n} h ago", { n: Math.round(m / 60) }) : t("{n} d ago", { n: Math.round(m / 1440) });
+}
 async function home() {
-  const promo = !free();
-  const [tech, sell] = promo ? await Promise.all([api("GET", "/api/leaderboard?role=technician"), api("GET", "/api/leaderboard?role=seller")]) : [{ entries: [] }, { entries: [] }];
-  const top = b => b.entries.length ? `<ol>${b.entries.slice(0, 5).map(e => `<li><strong>${esc(e.name)}</strong> <span class="muted">${esc(detailText(e.detail))}</span></li>`).join("")}</ol>` : `<p class="muted">${t("Nobody yet")}</p>`;
-  const boards = promo && (tech.entries.length || sell.entries.length)
-    ? `<div class="grid mt"><div class="card"><h2>${t("Promoted technicians")}</h2>${top(tech)}</div><div class="card"><h2>${t("Promoted sellers")}</h2>${top(sell)}</div></div>` : "";
-  const r = S.me?.role;
-  const steps = [["Describe the problem", "Add photos, the address area and whether you already have the part."],
-    ["Nearby technicians call you", "Technicians who fix this near you see your request. You see who viewed your number."],
-    ["Agree the price before work starts", "Ask for the price in writing (an SMS is enough). Report anyone who changes it afterwards."],
-    ["Get the part from Eliava", "If a part is needed, order it from a market stall with home delivery or pickup."]];
-  const trust = [["shield", "Your exact address stays hidden until a technician views your number."], ["eye", "You can see every technician who viewed your number."],
-    ["flag", "Every post, listing and profile has a report button, and an admin checks each report."], ["image", "Location data (GPS) is removed from photos when you upload them."]];
+  const [stats, recent, techs, parts] = await Promise.all([api("GET", "/api/stats/categories").catch(() => []), api("GET", "/api/posts/recent").catch(() => []),
+    api("GET", `/api/technicians?lat=${TBILISI[0]}&lng=${TBILISI[1]}&radius_km=50`).catch(() => []), api("GET", "/api/listings").catch(() => [])]);
+  const count = slug => stats.find(x => x.slug === slug)?.technicians || 0;
+  const bySlug = slug => S.cats.find(c => c.slug === slug);
+  const tiles = cats("repair").map(c => `<a class="tile" href="#/technicians?category=${esc(c.slug)}">${icon(CAT_ICON[c.slug] || "wrench")}<span>${esc(catShort(c))}</span><small>${t("{n} technicians", { n: count(c.slug) })}</small></a>`).join("");
+  const reqs = recent.length ? `<div class="feed">${recent.map(p => `<div class="req"><span class="req-icon">${icon(CAT_ICON[p.category] || "wrench")}</span>
+      <div><strong>${esc(p.title)}</strong><div class="meta"><span>${icon("pin")} ${esc(t("area:" + p.area))}</span><span>${ago(p.createdAt)}</span><span>${icon("eye")} ${t("{n} technicians viewed", { n: p.views })}</span></div></div>
+      <div class="req-est"><small>${t("Estimate")}</small><b>${gel(p.minTetri).replace(" ₾", "")}–${gel(p.maxTetri)}</b></div></div>`).join("")}</div>`
+    : emptyState(t("No open requests yet. Post yours and nearby technicians will see it."), `<a class="btn" href="#/post">${t("Add a request")}</a>`, "post");
+  const near = techs.slice(0, 4).map(x => `<a class="tech-row" href="#/technicians?category=${esc(x.categories[0]?.slug || "")}"><span class="avatar">${initials(x.name)}</span>
+      <span><strong>${esc(x.name)}</strong><small>${esc(x.categories.map(catShort).join(", "))}</small></span>${x.distanceKm != null ? `<span class="km">${km(x.distanceKm)}</span>` : ""}</a>`).join("")
+    || `<p class="muted">${t("No technicians yet. Be the first one.")}</p>`;
+  const shelf = parts.slice(0, 4).map(l => { const img = l.media.find(m => m.kind === "image");
+    return `<a class="part" href="#/market?q=${encodeURIComponent(l.title)}">${img ? `<img class="cover" src="${esc(mediaURL(img.url))}" alt="" loading="lazy">` : `<div class="cover placeholder">${icon("image")}</div>`}
+      <span class="price-tag">${gel(l.priceTetri)}</span><strong>${esc(l.title)}</strong><small>${l.seller.stallCode ? t("Stall {code}", { code: esc(l.seller.stallCode) }) : esc(l.seller.shopName)}</small></a>`; }).join("");
   app().innerHTML = `
-    <section class="check-hero" aria-labelledby="hq">
-      ${free() ? `<span class="tag">${t("Free during the beta")}</span>` : ""}
-      <h1 id="hq">${t("What broke?")}</h1>
-      <p class="sub">${t("Pick the appliance to see what a repair usually costs in Tbilisi, then post the problem for nearby technicians.")}</p>
-      <div class="appliances" role="group" aria-label="${esc(t("Appliance"))}">${cats("repair").map(c => `<button type="button" data-cat="${c.id}" aria-pressed="false">${esc(catShort(c))}</button>`).join("")}</div>
-      <div class="answer idle" id="answer" aria-live="polite">${t("The typical price appears here.")}</div>
-    </section>
-    <div class="home-lower">
-      <section class="card"><h2>${t("How it works")}</h2>
-        <ol class="steps">${steps.map(([a, b]) => `<li><div><strong>${t(a)}</strong><span class="muted">${t(b)}</span></div></li>`).join("")}</ol></section>
-      <section class="card"><h2>${t("Why it's safe")}</h2>
-        <ul class="safe-list">${trust.map(([i, x]) => `<li>${icon(i)}<span>${t(x)}</span></li>`).join("")}</ul>
-        <p><a href="#/eliava">${t("See the Eliava market map")}</a></p></section>
+    <nav class="tiles" aria-label="${esc(t("Specialities"))}">${tiles}</nav>
+    <div class="home-cols">
+      <section><div class="sec-head"><h2>${t("New requests")}</h2></div>${reqs}
+        <p class="hint">${t("Only the area is public. The exact address and phone number stay hidden.")}</p></section>
+      <aside>
+        <div class="cta-box"><h2>${t("Something broke?")}</h2><p>${t("Upload a photo, pick the area and see the price. Nearby technicians will call you.")}</p>
+          <a class="btn accent" href="#/post">${icon("plus")} ${t("Add a request")}</a></div>
+        <div class="card"><div class="sec-head"><h2>${t("Technicians nearby")}</h2><a href="#/technicians">${t("All")}</a></div>${near}</div>
+      </aside>
     </div>
-    ${boards}
-    ${r === "technician" || r === "seller" ? "" : `<section class="pros"><div><h2>${t("Are you a technician or an Eliava seller?")}</h2>
-      <p>${free() ? t("Get customers near you. Registration is free during the beta.") : t("Get customers near you.")}</p></div>
-      <div class="actions"><a class="btn accent" href="#/register?role=technician">${joinLabel("technician")}</a><a class="btn ghost" href="#/register?role=seller">${joinLabel("seller")}</a></div></section>`}`;
-  $$("[data-cat]").forEach(b => b.addEventListener("click", async () => {
-    $$("[data-cat]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    const cat = S.cats.find(c => String(c.id) === b.dataset.cat);
-    const e = await act(() => api("GET", "/api/estimate/typical?category=" + cat.id));
-    if (!e) return;
-    const box = $("#answer");
-    box.className = "answer live";
-    box.innerHTML = `<div><div class="range">${gel(e.minTetri).replace(" ₾", "")}–${gel(e.maxTetri)}</div>
-      <p>${t("{cat}: typical repair with parts in Tbilisi. The technician gives the final price after looking at it.", { cat: esc(catName(cat)) })}</p></div>
-      <div class="actions"><a class="btn" href="#/post">${t("Post the problem")}</a><a class="btn ghost" href="#/technicians?category=${esc(cat.slug)}">${t("See technicians")}</a></div>`;
-  }));
+    ${shelf ? `<section><div class="sec-head"><h2>${t("Parts from Eliava")}</h2><a href="#/market">${t("Go to the market")}</a></div><div class="shelf">${shelf}</div></section>` : ""}`;
 }
 
 async function technicians(params) {
@@ -797,6 +797,12 @@ document.addEventListener("error", e => {
   const el = e.target;
   if (el.tagName === "IMG" && el.classList.contains("cover")) el.outerHTML = `<div class="cover placeholder">${icon("image")}</div>`;
 }, true);
+document.addEventListener("submit", e => {
+  if (e.target.id !== "topsearch") return;
+  e.preventDefault();
+  const q = e.target.q.value.trim(), cat = S.cats.find(c => c.kind === "repair" && q && catName(c).toLowerCase().includes(q.toLowerCase()));
+  go(cat ? "#/technicians?category=" + cat.slug : "#/market?q=" + encodeURIComponent(q));
+});
 document.addEventListener("click", e => {
   const menu = $("#menu");
   if (menu?.open && !menu.contains(e.target)) menu.open = false;

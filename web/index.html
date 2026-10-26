@@ -22,18 +22,18 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="beta" id="beta">ბეტა: გამოქვეყნება, რეგისტრაცია და მაღაზიის გახსნა უფასოა</div>
   <header class="top">
     <div class="wrap">
-      <a class="logo" href="#/" aria-label="Eliava"><span class="logo-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#14202B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></span><span class="logo-text">ELIAVA<span class="dot">.</span></span></a>
-      <nav id="nav" aria-label="მთავარი მენიუ"></nav>
+      <a class="logo" href="#/" aria-label="Eliava"><span class="logo-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#14202B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></span><span class="logo-text">ელიავა</span><span class="ge">.ge</span></a>
+      <form class="topsearch" id="topsearch" role="search"><input name="q" type="search" aria-label="ძებნა" placeholder="რა გაფუჭდა ან რა ნაწილს ეძებთ?"><button aria-label="ძებნა"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button></form>
+      <a class="btn addbtn" id="addbtn" href="#/post">+ მოთხოვნის დამატება</a>
       <div class="userbox" id="userbox"></div>
     </div>
+    <div class="wrap navrow"><nav id="nav" aria-label="მთავარი მენიუ"></nav></div>
   </header>
   <main class="wrap" id="app" tabindex="-1">
-    <section class="check-hero">
-      <h1>რა გაფუჭდა?</h1>
-      <p class="sub">იპოვე ტექნიკის შემკეთებელი ხელოსანი შენს ახლოს, გამოაქვეყნე პრობლემა ფოტოებით და მიიღე ფასის შეფასება, ან იყიდე ნაწილები ელიავას ბაზრობის დახლებიდან.</p>
-    </section>
+    <div class="tiles" style="min-height:120px"></div>
     <p class="muted">იტვირთება…</p>
     <noscript><p>საიტის გამოსაყენებლად ჩართეთ JavaScript.</p></noscript>
   </main>
