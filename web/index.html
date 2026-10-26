@@ -16,24 +16,28 @@
   <meta property="og:description" content="ახლომდებარე ხელოსნები, შეკეთების ფასის შეფასება და ნაწილები ელიავას დახლებიდან მიტანით.">
   <meta property="og:url" content="https://eliava-otul.vercel.app/">
   <meta name="twitter:card" content="summary">
+  <link rel="preload" href="fonts/NotoSansGeorgian.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap">
-      <a class="logo" href="#/" aria-label="Eliava">ELIAVA<span>.</span></a>
+      <a class="logo" href="#/" aria-label="Eliava"><span class="logo-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></span><span class="logo-text">ELIAVA<span class="dot">.</span></span></a>
       <nav id="nav" aria-label="მთავარი მენიუ"></nav>
       <div class="userbox" id="userbox"></div>
     </div>
   </header>
   <main class="wrap" id="app" tabindex="-1">
-    <h1>ელიავა — ხელოსნები, შეკეთება და ნაწილები</h1>
-    <p>იპოვე ტექნიკის შემკეთებელი ხელოსანი შენს ახლოს (კონდიციონერი, მაცივარი, სარეცხი მანქანა, ტელევიზორი და სხვა), გამოაქვეყნე პრობლემა ფოტოებით და მიიღე ფასის შეფასება, ან იყიდე ნაწილები ელიავას ბაზრობის დახლებიდან სახლამდე მიტანით.</p>
+    <section class="hero">
+      <h1>შეკეთება, ხელოსნები და ნაწილები ერთ სივრცეში</h1>
+      <p>იპოვე ტექნიკის შემკეთებელი ხელოსანი შენს ახლოს (კონდიციონერი, მაცივარი, სარეცხი მანქანა, ტელევიზორი და სხვა), გამოაქვეყნე პრობლემა ფოტოებით და მიიღე ფასის შეფასება, ან იყიდე ნაწილები ელიავას ბაზრობის დახლებიდან სახლამდე მიტანით.</p>
+    </section>
     <p class="muted">იტვირთება…</p>
     <noscript><p>საიტის გამოსაყენებლად ჩართეთ JavaScript.</p></noscript>
   </main>
-  <footer id="footer"><a href="terms-ka.html">წესები და პირობები</a> · ელიავა</footer>
+  <nav class="tabbar" id="tabbar" aria-label="მთავარი მენიუ"></nav>
+  <footer id="footer"><div class="wrap"><span>ელიავა</span><nav><a href="terms-ka.html">წესები და პირობები</a></nav></div></footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="config.js"></script>
   <script src="i18n.js"></script>
