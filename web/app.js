@@ -7,6 +7,43 @@ const S = { token: localStorage.getItem("eliava_token") || "", me: null, config:
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const app = () => $("#app");
+const ICONS = {
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  post: '<path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/>',
+  cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 7H6"/>',
+  pin: '<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
+  phone: '<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/>',
+  map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  home: '<path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h14V9.5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+  store: '<path d="M4 10v10h16V10"/><path d="M3 4h18l-1.5 6h-15z"/><path d="M10 20v-5h4v5"/>',
+  list: '<path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  box: '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  flag: '<path d="M5 21V4h11l-1.5 4L16 12H5"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+  star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+};
+function icon(name) {
+  return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
+}
+function initials(name) { return esc(String(name || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase()); }
+function catShort(c) { return catName(c).replace(/\s*\(.*\)\s*$/, ""); }
+function cityName(c) { return (LANG === "ka" && KA["area:" + c]) || c || ""; }
+function uploadBox(id, label, hint) {
+  return `<label class="upload" for="${id}"><input id="${id}" type="file" multiple accept="image/*,video/*"><span class="upload-icon">${icon("upload")}</span>
+    <span><strong>${esc(label)}</strong><span class="hint">${esc(hint)}</span></span></label>`;
+}
+function locStatus(set) {
+  return set ? `${icon("pin")} ${t("Location set")}` : t("Click the map or use your location");
+}
+function setLocStatus(el, set) { if (el) { el.innerHTML = locStatus(set); el.classList.toggle("set", !!set); } }
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -72,8 +109,8 @@ function thumbs(media) {
     ? `<video src="${esc(mediaURL(m.url))}" controls preload="metadata"></video>`
     : `<a href="${esc(mediaURL(m.url))}" target="_blank" rel="noopener"><img src="${esc(mediaURL(m.url))}" alt="${esc(t("Photo"))}" loading="lazy"></a>`).join("")}</div>`;
 }
-function emptyState(text, actions = "") {
-  return `<div class="card empty"><p>${text}</p>${actions ? `<div class="actions">${actions}</div>` : ""}</div>`;
+function emptyState(text, actions = "", ic = "search") {
+  return `<div class="card empty"><div class="empty-icon">${icon(ic)}</div><p>${text}</p>${actions ? `<div class="actions">${actions}</div>` : ""}</div>`;
 }
 function joinLabel(role) {
   if (role === "technician") return free() ? t("I'm a technician: join free") : t("Join as a technician");
@@ -153,7 +190,7 @@ function openReport(type, id) {
     <p class="muted small">${t("An admin will review it. The person you report is not told who reported them.")}</p>
     <div><label for="rr">${t("Reason")}</label><select id="rr" name="reason">${["fake", "scam", "unsafe", "spam", "other"].map(r => `<option value="${r}">${t("reason:" + r)}</option>`).join("")}</select></div>
     <div><label for="rd">${t("Details (optional)")}</label><textarea id="rd" name="details" maxlength="1000"></textarea></div>
-    <div class="row"><div style="flex:0"><button type="submit">${t("Send report")}</button></div><div style="flex:0"><button type="button" class="secondary" data-cancel>${t("Cancel")}</button></div></div></form>`;
+    <div class="actions"><button type="submit">${t("Send report")}</button><button type="button" class="secondary" data-cancel>${t("Cancel")}</button></div></form>`;
   document.body.appendChild(d);
   d.addEventListener("close", () => d.remove());
   $("[data-cancel]", d).addEventListener("click", () => d.close());
@@ -168,7 +205,7 @@ function openReport(type, id) {
 function loginFirst(roles) {
   if (!S.me) {
     app().innerHTML = `<div class="card"><h1>${t("Please log in")}</h1><p class="muted">${t("You need an account for this page.")}</p>
-      <a class="btn" href="#/login">${t("Log in")}</a> <a class="btn secondary" href="#/register">${t("Create account")}</a></div>`;
+      <div class="actions mt"><a class="btn" href="#/login">${t("Log in")}</a><a class="btn secondary" href="#/register">${t("Create account")}</a></div></div>`;
     return true;
   }
   if (roles && S.me.role !== "admin" && !roles.includes(S.me.role)) {
@@ -185,66 +222,93 @@ function registrationNotice() {
 /* ---------- nav ---------- */
 function renderNav() {
   const r = S.me?.role;
-  const links = [["#/", "Home"], ["#/technicians", "Find a technician"], ["#/market", "Market"], ["#/eliava", "Eliava map"], ["#/leaderboard", "Leaderboard"]];
-  if (r === "customer" || r === "admin") links.push(["#/post", "Post a problem"], ["#/my-posts", "My requests"]);
-  if (r === "technician" || r === "admin") links.push(["#/jobs", "Jobs near me"]);
-  if (r === "seller" || r === "admin") links.push(["#/seller", "My shop"]);
-  if (r === "customer" || r === "technician") links.push(["#/orders", "My orders"]);
-  if (r === "admin") links.push(["#/admin", "Admin"]);
   const cur = "#/" + location.hash.replace(/^#\/?/, "").split("?")[0];
+  const action = r === "technician" ? ["#/jobs", "Jobs near me", "briefcase", "Jobs"] : r === "seller" ? ["#/seller", "My shop", "store", "My shop"] : ["#/post", "Post a problem", "post", "Request"];
+  const on = h => h === cur ? ` aria-current="page"` : "";
+  const cls = (h, extra = "") => `class="${[extra, h === cur ? "active" : ""].join(" ").trim()}"`;
+  const main = [["#/technicians", "Find a technician"], ["#/market", "Market"], ["#/eliava", "Eliava map"]];
   $("#nav").setAttribute("aria-label", t("Main menu"));
-  $("#nav").innerHTML = links.map(([h, label]) => `<a href="${h}" ${h === cur ? `class="active" aria-current="page"` : ""}>${t(label)}</a>`).join("");
-  const langBtn = `<button class="secondary lang" id="lang" lang="${LANG === "ka" ? "en" : "ka"}" aria-label="${LANG === "ka" ? "Switch to English" : "ქართულზე გადართვა"}">${LANG === "ka" ? "EN" : "ქარ"}</button>`;
+  $("#nav").innerHTML = main.map(([h, l]) => `<a href="${h}" ${cls(h)}${on(h)}>${t(l)}</a>`).join("") +
+    `<a href="${action[0]}" ${cls(action[0], "cta")}${on(action[0])}>${t(action[1])}</a>`;
+  const items = [];
+  if (r === "customer" || r === "admin") items.push(["#/my-posts", "My requests", "list"]);
+  if (r === "technician" || r === "admin") items.push(["#/jobs", "Jobs near me", "briefcase"]);
+  if (r === "seller" || r === "admin") items.push(["#/seller", "My shop", "store"]);
+  if (r === "customer" || r === "technician") items.push(["#/orders", "My orders", "box"]);
+  if (!free()) items.push(["#/leaderboard", "Leaderboard", "star"]);
+  if (r === "admin") items.push(["#/admin", "Admin", "shield"]);
+  items.push(["#/account", "My account", "user"]);
+  const langBtn = `<button type="button" class="lang" id="lang" lang="${LANG === "ka" ? "en" : "ka"}">${LANG === "ka" ? "EN" : "ქარ"}<span class="sr-only"> ${LANG === "ka" ? "Switch to English" : "ქართულზე გადართვა"}</span></button>`;
   $("#userbox").innerHTML = S.me
-    ? `<a href="#/account" style="color:#fff">${esc(S.me.name)}</a> <span class="badge">${esc(roleName(S.me.role))}</span> ${free() ? "" : `<span>${gel(S.me.balanceTetri)}</span>`} <button class="secondary" id="logout">${t("Log out")}</button> ${langBtn}`
-    : `<a class="btn secondary" href="#/login">${t("Log in")}</a> <a class="btn" href="#/register">${t("Sign up")}</a> ${langBtn}`;
+    ? `${langBtn}<details class="menu" id="menu"><summary><span class="avatar">${initials(S.me.name)}</span><span class="who">${esc(S.me.name)}</span><span class="sr-only">${t("Account menu")}</span></summary>
+      <div class="menu-list"><div class="menu-head"><strong>${esc(S.me.name)}</strong><br><span class="badge">${esc(roleName(r))}</span>${free() ? "" : ` <span class="badge">${gel(S.me.balanceTetri)}</span>`}</div>
+      ${items.map(([h, l, i]) => `<a href="${h}"${on(h)}>${icon(i)} ${t(l)}</a>`).join("")}<div class="sep"></div>
+      <button type="button" id="logout">${icon("logout")} ${t("Log out")}</button></div></details>`
+    : `${langBtn}<a class="btn secondary small" href="#/login">${t("Log in")}</a><a class="btn small signup" href="#/register">${t("Sign up")}</a>`;
+  const tabs = [["#/", "Home", "home"], ["#/technicians", "Technicians", "wrench"], [action[0], action[3], action[2], "cta"], ["#/market", "Market", "cart"],
+    S.me ? ["#/account", "Account", "user"] : ["#/login", "Log in", "user"]];
+  $("#tabbar").setAttribute("aria-label", t("Main menu"));
+  $("#tabbar").innerHTML = tabs.map(([h, l, i, c]) => `<a href="${h}" ${cls(h, c || "")}${on(h)}>${icon(i)}<span>${t(l)}</span></a>`).join("");
   $("#logout")?.addEventListener("click", async () => { await act(() => api("POST", "/api/auth/logout")); setSession("", null); go("#/"); });
   $("#lang").addEventListener("click", () => { setLang(LANG === "ka" ? "en" : "ka"); applyStaticText(); render(); });
 }
 function applyStaticText() {
   document.documentElement.lang = LANG;
-  $("#footer").innerHTML = `<a href="${termsURL()}">${t("Terms & Conditions")}</a> · ${t("Eliava marketplace")}`;
+  $("#footer").innerHTML = `<div class="wrap"><span>© ${new Date().getFullYear()} ${t("Eliava marketplace")}</span>
+    <nav aria-label="${esc(t("Footer"))}"><a href="${termsURL()}">${t("Terms & Conditions")}</a><a href="#/eliava">${t("Eliava map")}</a>${S.config.paymentsMode && !free() ? `<a href="#/leaderboard">${t("Leaderboard")}</a>` : ""}</nav></div>`;
 }
 async function refreshMe() { if (S.token) { S.me = await api("GET", "/api/me").catch(() => null); renderNav(); } }
 
 /* ---------- pages ---------- */
 async function home() {
-  const [tech, sell] = await Promise.all([api("GET", "/api/leaderboard?role=technician"), api("GET", "/api/leaderboard?role=seller")]);
+  const promo = !free();
+  const [tech, sell] = promo ? await Promise.all([api("GET", "/api/leaderboard?role=technician"), api("GET", "/api/leaderboard?role=seller")]) : [{ entries: [] }, { entries: [] }];
   const top = b => b.entries.length ? `<ol>${b.entries.slice(0, 5).map(e => `<li><strong>${esc(e.name)}</strong> <span class="muted">${esc(detailText(e.detail))}</span></li>`).join("")}</ol>` : `<p class="muted">${t("Nobody yet")}</p>`;
-  const boards = tech.entries.length || sell.entries.length
-    ? `<div class="grid-3" style="margin-top:14px">
-        <div class="card"><h2>${t("Promoted technicians")}</h2>${top(tech)}</div>
-        <div class="card"><h2>${t("Promoted sellers")}</h2>${top(sell)}</div></div>`
-    : `<div class="card" style="margin-top:14px"><h2>${t("Eliava is just launching")}</h2>
-        <p class="muted">${t("We're signing up the first technicians and Eliava market sellers in Tbilisi. Join now and be the first customers see.")}</p>
-        <div class="row"><div style="flex:0"><a class="btn" href="#/register?role=technician">${joinLabel("technician")}</a></div>
-        <div style="flex:0"><a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a></div></div></div>`;
+  const boards = promo && (tech.entries.length || sell.entries.length)
+    ? `<div class="grid-3 mt"><div class="card"><h2>${t("Promoted technicians")}</h2>${top(tech)}</div><div class="card"><h2>${t("Promoted sellers")}</h2>${top(sell)}</div></div>` : "";
+  const r = S.me?.role;
+  const primary = r === "technician" ? ["#/jobs", "Jobs near me", "briefcase"] : r === "seller" ? ["#/seller", "My shop", "store"] : ["#/post", "Post a problem", "post"];
+  const service = (ic, title, text, href, cta) => `<div class="card service"><div class="icon-box">${icon(ic)}</div><h2>${t(title)}</h2><p class="muted">${t(text)}</p><a class="btn secondary" href="${href}">${t(cta)}</a></div>`;
+  const steps = [["Describe the problem", "Add photos, the address area and whether you already have the part. You get a price range right away."],
+    ["Nearby technicians see it", "Technicians who fix this near you open your request and call you. You see who viewed your number."],
+    ["Get the part from Eliava", "If a part is needed, order it from a market stall with home delivery or pickup."]];
+  const trust = [["shield", "Your exact address stays hidden until a technician views your number."], ["eye", "You can see every technician who viewed your number."],
+    ["flag", "Every post, listing and profile has a report button, and an admin checks each report."], ["image", "Location data (GPS) is removed from photos when you upload them."]];
   app().innerHTML = `
-    <div class="hero"><h1>${t("Repairs, technicians and parts, all in one place")}</h1>
-      <p>${t("Find a nearby technician, post what's broken, or buy parts from the Eliava market with delivery.")}</p></div>
+    <section class="hero">${free() ? `<span class="badge beta">${t("Free beta: no fees for anyone")}</span>` : ""}
+      <h1>${t("Repairs, technicians and parts, all in one place")}</h1>
+      <p>${t("Find a nearby technician, post what's broken, or buy parts from the Eliava market with delivery.")}</p>
+      <div class="actions"><a class="btn accent" href="${primary[0]}">${icon(primary[2])} ${t(primary[1])}</a><a class="btn secondary" href="#/technicians">${icon("wrench")} ${t("Find a technician")}</a></div></section>
     <div class="grid-3">
-      <div class="card service"><h2>🔧 ${t("Find a technician")}</h2><p class="muted">${t("Search by speciality and distance from you.")}</p><a class="btn" href="#/technicians">${t("Search technicians")}</a></div>
-      <div class="card service"><h2>📝 ${t("Post a problem")}</h2><p class="muted">${t("Describe it, add photos/videos and your location. Get a price estimate; nearby technicians contact you.")}</p><a class="btn" href="#/post">${t("Post a problem")}</a></div>
-      <div class="card service"><h2>🛒 ${t("Parts market")}</h2><p class="muted">${t("Parts and appliances from Eliava market sellers, with stall numbers on the map and home delivery.")}</p><a class="btn" href="#/market">${t("Open market")}</a></div>
-    </div>${boards}`;
+      ${service("wrench", "Find a technician", "Search by speciality and distance from you.", "#/technicians", "Search technicians")}
+      ${service("post", "Post a problem", "Describe it, add photos/videos and your location. Get a price estimate; nearby technicians contact you.", "#/post", "Post a problem")}
+      ${service("cart", "Parts market", "Parts and appliances from Eliava market sellers, with stall numbers on the map and home delivery.", "#/market", "Open market")}
+    </div>
+    <h2>${t("How it works")}</h2>
+    <ol class="card steps">${steps.map(([a, b]) => `<li><div><strong>${t(a)}</strong><span class="muted">${t(b)}</span></div></li>`).join("")}</ol>
+    <h2>${t("Why it's safe")}</h2>
+    <div class="card trust">${trust.map(([i, x]) => `<div>${icon(i)}<span>${t(x)}</span></div>`).join("")}</div>
+    ${boards}
+    ${r === "technician" || r === "seller" ? "" : `<div class="card join mt"><div><h2>${t("Are you a technician or an Eliava seller?")}</h2>
+      <p class="muted">${free() ? t("Get customers near you. Registration is free during the beta.") : t("Get customers near you.")}</p></div>
+      <div class="actions"><a class="btn" href="#/register?role=technician">${joinLabel("technician")}</a><a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a></div></div>`}`;
 }
 
 async function technicians(params) {
   let loc = null;
   app().innerHTML = `<h1>${t("Find a technician")}</h1>
-    <div class="card stack">
-      <div class="row">
+    <div class="card">
+      <div class="filters">
         <div><label for="cat">${t("Speciality")}</label><select id="cat">${catOptions("repair", params.get("category") || "", t("All specialities"))}</select></div>
         <div><label for="radius">${t("Within (km)")}</label><select id="radius"><option>5</option><option selected>10</option><option>25</option><option>50</option><option>200</option></select></div>
-        <div><button class="secondary" id="locate">📍 ${t("Use my location")}</button></div>
-        <div><button id="search">${t("Search")}</button></div>
+        <div class="actions"><button type="button" class="secondary" id="locate">${icon("pin")} ${t("Use my location")}</button><button type="button" id="search">${icon("search")} ${t("Search")}</button></div>
       </div>
-      <p class="muted small">${t("Click the map to set where you need the repair.")}</p>
+      <div class="map-head mt"><span class="loc-status" id="locs">${t("Click the map to set where you need the repair.")}</span></div>
       <div id="map" class="map"></div>
     </div>
-    <div id="results" class="grid" style="margin-top:14px" aria-live="polite"></div>`;
+    <div id="results" class="grid mt" aria-live="polite"></div>`;
   let markers = [];
-  const picker = pickerMap($("#map"), null, p => { loc = p; });
+  const picker = pickerMap($("#map"), null, p => { loc = p; setLocStatus($("#locs"), true); search(); });
   $("#locate").addEventListener("click", () => picker.locate());
   const search = async () => {
     const q = new URLSearchParams({ category: $("#cat").value, radius_km: $("#radius").value });
@@ -253,16 +317,17 @@ async function technicians(params) {
     if (!list) return;
     markers.forEach(m => m.remove());
     markers = list.filter(x => x.location).map(x => L.circleMarker([x.location.lat, x.location.lng], { radius: 8, color: "#0e7c66" }).addTo(picker.map).bindPopup(esc(x.name)));
-    $("#results").innerHTML = list.length ? list.map(x => `
-      <div class="card">
-        <h2>${esc(x.name)} ${x.boostTetri > 0 ? `<span class="badge top">${t("Promoted")}</span>` : ""}</h2>
-        <div>${x.categories.map(c => `<span class="badge">${esc(catName(c))}</span>`).join("")}</div>
-        <p class="muted">${esc(x.city)}${x.distanceKm != null ? ` · ${km(x.distanceKm)}` : ""} · ${t("works within {n} km", { n: x.serviceRadiusKm })}</p>
-        <p>${esc(x.bio)}</p>
-        <a class="btn" href="tel:${esc(x.phone)}">📞 ${esc(x.phone)}</a>
-        ${S.me?.id === x.id ? "" : `<p>${reportButton("user", x.id)}</p>`}
-      </div>`).join("") : emptyState(t("No technicians found here yet. Eliava is just launching. Post your problem and nearby technicians will see it as they join."),
-        `<a class="btn" href="#/post">${t("Post a problem")}</a><a class="btn secondary" href="#/register?role=technician">${joinLabel("technician")}</a>`);
+    $("#results").innerHTML = list.length ? list.map(x => {
+      const where = [cityName(x.city), x.distanceKm != null ? km(x.distanceKm) : ""].filter(Boolean).join(" · ");
+      return `<div class="card item">
+        <div class="person"><span class="avatar lg">${initials(x.name)}</span><div><h2>${esc(x.name)}</h2>${x.boostTetri > 0 ? `<span class="badge top">${t("Promoted")}</span>` : ""}</div></div>
+        <div>${x.categories.map(c => `<span class="badge">${esc(catShort(c))}</span>`).join("")}</div>
+        <div class="meta">${where ? `<span>${icon("pin")} ${esc(where)}</span>` : ""}<span>${t("works within {n} km", { n: x.serviceRadiusKm })}</span></div>
+        <p class="grow clamp">${esc(x.bio)}</p>
+        <div class="foot"><a class="btn" href="tel:${esc(x.phone)}">${icon("phone")} ${esc(x.phone)}</a>${S.me?.id === x.id ? "" : reportButton("user", x.id)}</div>
+      </div>`;
+    }).join("") : emptyState(t("No technicians found here yet. Eliava is just launching. Post your problem and nearby technicians will see it as they join."),
+        `<a class="btn" href="#/post">${t("Post a problem")}</a><a class="btn secondary" href="#/register?role=technician">${joinLabel("technician")}</a>`, "wrench");
   };
   bind("#search", "click", search);
   search();
@@ -271,23 +336,25 @@ async function technicians(params) {
 async function newPost() {
   if (loginFirst(["customer"])) return;
   let loc = null;
-  app().innerHTML = `<h1>${t("Post a problem")}</h1>
-    <form class="card stack" id="f">
-      <div class="row">
-        <div><label for="pc">${t("What needs fixing?")}</label><select id="pc" name="categoryId" required>${catOptions("repair")}</select></div>
-        <div><label for="pt">${t("Short title")}</label><input id="pt" name="title" required minlength="5" maxlength="120" placeholder="${esc(t("e.g. AC blows warm air"))}"></div>
-      </div>
-      <div><label for="pd">${t("Description (at least 20 characters)")}</label><textarea id="pd" name="description" required minlength="20" placeholder="${esc(t("Brand, model, what happens, since when…"))}"></textarea></div>
-      <label class="check"><input type="checkbox" name="hasParts" value="true"> ${t("I already have the needed parts at home")}</label>
-      <div><label for="pm">${t("Photos and videos (at least one photo; photos up to 10 MB, videos up to 100 MB)")}</label><input id="pm" type="file" multiple accept="image/*,video/*">
-        <div class="previews" id="previews"></div></div>
-      <div><label for="pa">${t("Address (optional; technicians only see the area until they view your number)")}</label><input id="pa" name="address" maxlength="300" autocomplete="street-address"></div>
-      <div class="row"><div><label>${t("Location: click the map")}</label></div><div style="flex:0"><button type="button" class="secondary" id="locate">📍 ${t("Use my location")}</button></div></div>
-      <div id="map" class="map"></div>
-      <div id="estimate" aria-live="polite"></div>
-      <div class="row"><div style="flex:0"><button type="button" class="secondary" id="est">${t("Get price estimate")}</button></div><div style="flex:0"><button type="submit">${t("Post request")}</button></div></div>
+  const section = (n, title, body) => `<div class="form-section"><h2 class="section-title"><span class="num">${n}</span>${t(title)}</h2><div class="stack">${body}</div></div>`;
+  app().innerHTML = `<h1>${t("Post a problem")}</h1><p class="lead">${t("Free. Takes about 2 minutes. Nearby technicians see your request and call you.")}</p>
+    <form class="card" id="f">
+      ${section(1, "What's broken?", `<div class="row">
+          <div><label for="pc">${t("What needs fixing?")}</label><select id="pc" name="categoryId" required>${catOptions("repair")}</select></div>
+          <div><label for="pt">${t("Short title")}</label><input id="pt" name="title" required minlength="5" maxlength="120" placeholder="${esc(t("e.g. AC blows warm air"))}"></div>
+        </div>
+        <div><label for="pd">${t("Description")}</label><textarea id="pd" name="description" required minlength="20" placeholder="${esc(t("Brand, model, what happens, since when…"))}" aria-describedby="pdh"></textarea>
+          <div class="hint" id="pdh">${t("At least 20 characters: brand, model, what happens and since when.")}</div></div>
+        <label class="check"><input type="checkbox" name="hasParts" value="true"> ${t("I already have the needed parts at home")}</label>`)}
+      ${section(2, "Photos and videos", `${uploadBox("pm", t("Add photos or videos"), t("At least one photo. Photos up to 10 MB, videos up to 100 MB."))}<div class="previews" id="previews"></div>`)}
+      ${section(3, "Where?", `<div><label for="pa">${t("Address (optional)")}</label><input id="pa" name="address" maxlength="300" autocomplete="street-address" aria-describedby="pah">
+          <div class="hint" id="pah">${t("Technicians only see the area until they view your number.")}</div></div>
+        <div><div class="map-head"><span class="loc-status" id="locs">${locStatus(false)}</span><button type="button" class="secondary small" id="locate">${icon("pin")} ${t("Use my location")}</button></div>
+          <div id="map" class="map"></div></div>
+        <div id="estimate" aria-live="polite"></div>`)}
+      <div class="actions mt"><button type="submit">${t("Post request")}</button><button type="button" class="secondary" id="est">${t("Get price estimate")}</button></div>
     </form>`;
-  const picker = pickerMap($("#map"), null, p => { loc = p; });
+  const picker = pickerMap($("#map"), null, p => { loc = p; setLocStatus($("#locs"), true); });
   $("#locate").addEventListener("click", () => picker.locate());
   const media = mediaPicker($("#pm"), $("#previews"));
   const f = $("#f");
@@ -326,7 +393,7 @@ function postCard(p, mode) {
       <div id="viewers-${p.id}"></div>`;
   } else if (mode === "tech") {
     actions = (p.contact
-      ? `<p><strong>${esc(p.contact.name)}</strong> · <a href="tel:${esc(p.contact.phone)}">📞 ${esc(p.contact.phone)}</a>${p.address ? `<br><span class="muted">${esc(p.address)}</span>` : ""}</p>`
+      ? `<p><strong>${esc(p.contact.name)}</strong> · <a href="tel:${esc(p.contact.phone)}">${icon("phone")} ${esc(p.contact.phone)}</a>${p.address ? `<br><span class="muted">${esc(p.address)}</span>` : ""}</p>`
       : `<button class="accent" data-reveal="${p.id}">${S.config.revealPrice ? t("View number ({price})", { price: gel(S.config.revealPrice) }) : t("View number (free)")}</button>`)
       + `<p>${reportButton("post", p.id)}</p>`;
   }
@@ -343,8 +410,8 @@ function postCard(p, mode) {
 async function myPosts() {
   if (loginFirst(["customer"])) return;
   const posts = await api("GET", "/api/posts/mine");
-  app().innerHTML = `<h1>${t("My repair requests")}</h1><p><a class="btn" href="#/post">+ ${t("New request")}</a></p>
-    <div class="grid">${posts.map(p => postCard(p, "owner")).join("") || emptyState(t("No requests yet. Post your first problem and nearby technicians will see it."), `<a class="btn" href="#/post">${t("Post a problem")}</a>`)}</div>`;
+  app().innerHTML = `<div class="page-head"><h1>${t("My repair requests")}</h1>${posts.length ? `<a class="btn" href="#/post">${icon("plus")} ${t("New request")}</a>` : ""}</div>
+    <div class="grid">${posts.map(p => postCard(p, "owner")).join("") || emptyState(t("No requests yet. Post your first problem and nearby technicians will see it."), `<a class="btn" href="#/post">${t("Post a problem")}</a>`, "post")}</div>`;
   bind("[data-viewers]", "click", (e, el) => act(async () => {
     const v = await api("GET", `/api/posts/${el.dataset.viewers}/viewers`);
     $("#viewers-" + el.dataset.viewers).innerHTML = v.length ? `<ul>${v.map(x => `<li>${esc(x.name)} · ${when(x.viewedAt)}</li>`).join("")}</ul>` : `<p class="muted">${t("Nobody yet")}</p>`;
@@ -355,19 +422,20 @@ async function myPosts() {
 async function jobs() {
   if (loginFirst(["technician"])) return;
   app().innerHTML = `<h1>${t("Jobs near me")}</h1>${registrationNotice()}
-    <div class="card row">
+    <div class="card filters">
       <div><label for="cat">${t("Category")}</label><select id="cat">${catOptions("repair", "", t("All categories"))}</select></div>
-      <div><label for="radius">${t("Within (km, empty = your service radius)")}</label><input id="radius" type="number" min="1" max="500" inputmode="numeric"></div>
-      <div><label class="check"><input type="checkbox" id="mine" checked> ${t("Only my specialities")}</label></div>
-      <div><button id="load">${t("Refresh")}</button></div>
+      <div><label for="radius">${t("Within (km)")}</label><input id="radius" type="number" min="1" max="500" inputmode="numeric" placeholder="${esc(t("Your service radius"))}"></div>
+      <label class="check"><input type="checkbox" id="mine" checked> ${t("Only my specialities")}</label>
+      <div class="actions"><button type="button" id="load">${t("Refresh")}</button></div>
     </div>
-    <div id="list" class="grid" style="margin-top:14px" aria-live="polite"></div>`;
+    <div id="list" class="grid mt" aria-live="polite"></div>`;
   const load = async () => {
     const q = new URLSearchParams({ category: $("#cat").value, mine: $("#mine").checked ? "1" : "0" });
     if ($("#radius").value) q.set("radius_km", $("#radius").value);
-    const posts = await act(() => api("GET", "/api/posts/nearby?" + q));
-    if (!posts) { $("#list").innerHTML = emptyState(t("Set your location and specialities on your Account page first."), `<a class="btn" href="#/account">${t("Account")}</a>`); return; }
-    $("#list").innerHTML = posts.map(p => postCard(p, "tech")).join("") || emptyState(t("No open requests nearby right now. Try a bigger distance or untick “Only my specialities”."));
+    let posts;
+    try { posts = await api("GET", "/api/posts/nearby?" + q); }
+    catch (e) { $("#list").innerHTML = emptyState(esc(e.message), `<a class="btn" href="#/account">${t("Account")}</a>`, "pin"); return; }
+    $("#list").innerHTML = posts.map(p => postCard(p, "tech")).join("") || emptyState(t("No open requests nearby right now. Try a bigger distance or untick “Only my specialities”."), "", "briefcase");
     bind("[data-reveal]", "click", (e, el) => act(async () => {
       const msg = S.config.revealPrice ? t("View this customer's number for {price}? You are charged once per request.", { price: gel(S.config.revealPrice) }) : t("View this customer's number? The customer will see that you viewed it.");
       if (!confirm(msg)) return;
@@ -381,19 +449,19 @@ async function jobs() {
 
 function listingCard(l) {
   const img = l.media.find(m => m.kind === "image");
-  const stall = l.seller.stallCode ? `<a href="#/eliava?stall=${l.seller.stallId}" class="badge">${t("Eliava stall {code}", { code: esc(l.seller.stallCode) })}</a>` : "";
-  return `<div class="card">
-    ${img ? `<img class="cover" src="${esc(mediaURL(img.url))}" alt="${esc(l.title)}" loading="lazy">` : `<div class="cover"></div>`}
+  const stall = l.seller.stallCode ? `<a href="#/eliava?stall=${l.seller.stallId}" class="badge">${icon("map")} ${t("Eliava stall {code}", { code: esc(l.seller.stallCode) })}</a>` : "";
+  return `<div class="card item">
+    ${img ? `<img class="cover" src="${esc(mediaURL(img.url))}" alt="" loading="lazy">` : `<div class="cover placeholder">${icon("image")}</div>`}
     <h2>${esc(l.title)} ${l.boostTetri > 0 ? `<span class="badge top">${t("Promoted")}</span>` : ""}</h2>
-    <div><span class="badge">${esc(catName(l.category))}</span>${stall}</div>
-    <p class="muted">${esc(l.description)}</p>
+    <div><span class="badge">${esc(catShort(l.category))}</span>${stall}</div>
+    <p class="muted clamp grow">${esc(l.description)}</p>
     <p><span class="price">${gel(l.priceTetri)}</span> <span class="muted">· ${t("{n} in stock", { n: l.stock })}</span></p>
-    <p class="muted small">${esc(l.seller.shopName)} · <a href="tel:${esc(l.seller.phone)}">${esc(l.seller.phone)}</a></p>
-    <button data-order="${l.id}">${t("Order")}</button> ${reportButton("listing", l.id)}
-    <form class="stack" id="order-${l.id}" hidden style="margin-top:10px">
-      <div class="row"><div><label for="oq-${l.id}">${t("Quantity")}</label><input id="oq-${l.id}" name="quantity" type="number" min="1" max="${l.stock}" value="1" inputmode="numeric"></div></div>
+    <div class="meta"><span>${icon("store")} ${esc(l.seller.shopName)}</span><a href="tel:${esc(l.seller.phone)}">${esc(l.seller.phone)}</a></div>
+    <div class="foot"><button type="button" data-order="${l.id}">${icon("cart")} ${t("Order")}</button>${reportButton("listing", l.id)}</div>
+    <form class="stack" id="order-${l.id}" hidden style="margin-top:12px">
+      <div><label for="oq-${l.id}">${t("Quantity")}</label><input id="oq-${l.id}" name="quantity" type="number" min="1" max="${l.stock}" value="1" inputmode="numeric"></div>
       <label class="check"><input type="checkbox" name="delivery"> ${t("Deliver to my home (+{fee})", { fee: gel(S.config.deliveryFee) })}</label>
-      <p class="muted small">${t("Delivery: Tbilisi only, parcels up to 20 kg. Large appliances: arrange transport with the seller. You pay the seller the item price × quantity (+ delivery fee) in cash on delivery or at pickup.")}</p>
+      <p class="hint">${t("Delivery: Tbilisi only, parcels up to 20 kg. Large appliances: arrange transport with the seller. You pay the seller the item price × quantity (+ delivery fee) in cash on delivery or at pickup.")}</p>
       <div><label for="oa-${l.id}">${t("Delivery address")}</label><input id="oa-${l.id}" name="deliveryAddress" autocomplete="street-address"></div>
       <button type="submit">${t("Place order: I will pay on delivery / pickup")}</button>
     </form>
@@ -402,7 +470,7 @@ function listingCard(l) {
 function bindOrders(reload) {
   bind("[data-order]", "click", (e, el) => {
     if (loginFirst(["customer", "technician"])) return;
-    $("#order-" + el.dataset.order).hidden = false; el.hidden = true;
+    $("#order-" + el.dataset.order).hidden = false; el.closest(".foot").hidden = true;
   });
   bind("form[id^=order-]", "submit", (e, f) => act(async () => {
     await api("POST", "/api/orders", { listingId: +f.id.slice(6), quantity: +f.quantity.value, delivery: f.delivery.checked, deliveryAddress: f.deliveryAddress.value });
@@ -413,20 +481,20 @@ function bindOrders(reload) {
 async function market(params) {
   const stalls = await api("GET", "/api/stalls");
   app().innerHTML = `<h1>${t("Parts market")}</h1>
-    <div class="card row">
+    <div class="card filters">
       <div><label for="q">${t("Search")}</label><input id="q" type="search" placeholder="${esc(t("e.g. compressor"))}" value="${esc(params.get("q") || "")}"></div>
       <div><label for="cat">${t("Category")}</label><select id="cat">${catOptions("part", params.get("category") || "", t("All categories"))}</select></div>
       <div><label for="stall">${t("Eliava stall")}</label><select id="stall"><option value="">${t("Any stall")}</option>${stalls.map(s => `<option value="${s.id}" ${params.get("stall") == s.id ? "selected" : ""}>${esc(s.code)}</option>`).join("")}</select></div>
-      <div><button id="search">${t("Search")}</button></div>
+      <div class="actions"><button type="button" id="search">${icon("search")} ${t("Search")}</button></div>
     </div>
-    <div id="list" class="grid" style="margin-top:14px" aria-live="polite"></div>`;
+    <div id="list" class="grid mt" aria-live="polite"></div>`;
   const load = async () => {
     const q = new URLSearchParams({ q: $("#q").value, category: $("#cat").value, stall: $("#stall").value });
     const list = await act(() => api("GET", "/api/listings?" + q));
     if (!list) return;
     $("#list").innerHTML = list.map(listingCard).join("") || emptyState(
       $("#q").value || $("#cat").value || $("#stall").value ? t("Nothing found. Try another search or category.") : t("No parts listed yet. Eliava market sellers are joining now."),
-      `<a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a>`);
+      `<a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a>`, "cart");
     bindOrders(load);
   };
   bind("#search", "click", load);
@@ -438,24 +506,38 @@ async function eliava(params) {
   const stalls = await api("GET", "/api/stalls");
   const isAdmin = S.me?.role === "admin";
   app().innerHTML = `<h1>${t("Eliava market map")}</h1>
-    <p class="muted">${t("Click a stall to see what its sellers offer.")}${isAdmin ? ` <strong>${t("Admin")}:</strong> ${t("drag pins to their real positions; changes save automatically.")}` : ""}</p>
-    <div id="map" class="map tall"></div>
-    ${isAdmin ? `<form class="card row" id="add" style="margin-top:12px"><div><label for="sc">${t("New stall code")}</label><input id="sc" name="code" required placeholder="E1"></div><div><label for="sn">${t("Name")}</label><input id="sn" name="name"></div><div><button>${t("Add stall at map centre")}</button></div></form>` : ""}
+    <p class="lead">${t("Pick a stall on the map or from the list to see what its sellers offer.")}${isAdmin ? ` <strong>${t("Admin")}:</strong> ${t("drag pins to their real positions; changes save automatically.")}` : ""}</p>
+    <div class="card">
+      <div id="map" class="map tall"></div>
+      <div class="stall-list" role="group" aria-label="${esc(t("Stalls"))}">${stalls.map(s => `<button type="button" class="secondary" data-stall="${s.id}" aria-pressed="false">${esc(s.code)}${s.name ? ` · ${esc(s.name)}` : ""}</button>`).join("") || `<p class="muted">${t("No stalls yet.")}</p>`}</div>
+      <p class="hint">${t("Stall positions on the map are approximate until each seller confirms theirs.")}</p>
+    </div>
+    ${isAdmin ? `<form class="card row mt" id="add"><div><label for="sc">${t("New stall code")}</label><input id="sc" name="code" required placeholder="E1"></div><div><label for="sn">${t("Name")}</label><input id="sn" name="name"></div><div class="actions"><button>${t("Add stall at map centre")}</button></div></form>` : ""}
     <h2 id="title"></h2><div id="list" class="grid" aria-live="polite"></div>`;
   const map = baseMap($("#map"), ELIAVA, 17);
+  if (stalls.length > 1) map.fitBounds(L.latLngBounds(stalls.map(s => [s.location.lat, s.location.lng])), { padding: [40, 40], maxZoom: 18 });
   const showStall = async st => {
+    $$("[data-stall]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.stall === String(st.id))));
     $("#title").textContent = t("Stall {code}", { code: st.code }) + (st.name ? " · " + st.name : "");
     const list = await act(() => api("GET", "/api/listings?stall=" + st.id));
     if (!list) return;
-    $("#list").innerHTML = list.map(listingCard).join("") || emptyState(t("No listings at this stall yet."), `<a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a>`);
+    $("#list").innerHTML = list.map(listingCard).join("") || emptyState(t("No listings at this stall yet."), `<a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a>`, "store");
     bindOrders(() => showStall(st));
   };
   stalls.forEach(st => {
-    const m = L.marker([st.location.lat, st.location.lng], { draggable: isAdmin, title: t("Stall {code}", { code: st.code }) }).addTo(map)
-      .bindTooltip(st.code, { permanent: true, direction: "top", offset: [-15, -12] });
+    const ll = [st.location.lat, st.location.lng];
+    const m = isAdmin
+      ? L.marker(ll, { draggable: true, title: t("Stall {code}", { code: st.code }) })
+      : L.circleMarker(ll, { radius: 9, color: "#fff", weight: 2, fillColor: "#0e7c66", fillOpacity: 1 });
+    m.addTo(map).bindTooltip(st.code, { direction: "top", className: "stall-dot" });
     m.on("click", () => showStall(st));
     if (isAdmin) m.on("dragend", () => act(() => api("PATCH", "/api/admin/stalls/" + st.id, { location: m.getLatLng() }), t("Stall {code} moved", { code: st.code })));
   });
+  $$("[data-stall]").forEach(b => b.addEventListener("click", () => {
+    const st = stalls.find(s => String(s.id) === b.dataset.stall);
+    map.panTo([st.location.lat, st.location.lng]);
+    showStall(st);
+  }));
   const pre = stalls.find(s => String(s.id) === params.get("stall"));
   if (pre) { map.setView([pre.location.lat, pre.location.lng], 18); showStall(pre); }
   bind("#add", "submit", (e, f) => act(async () => {
@@ -478,11 +560,11 @@ async function seller() {
         <div><label for="ss">${t("Eliava stall")}</label><select id="ss" name="stallId"><option value="">${t("Not at Eliava (pin on map below)")}</option>${stalls.map(s => `<option value="${s.id}" ${profile.stallId === s.id ? "selected" : ""}>${esc(s.code)}</option>`).join("")}</select></div>
         <div><label for="sa">${t("Address")}</label><input id="sa" name="address" value="${esc(profile.address)}"></div>
       </div>
-      <p class="muted small">${t("Not at Eliava? Click the map to pin your shop.")}</p>
-      <div id="map" class="map" style="height:240px"></div>
+      <p class="hint">${t("Not at Eliava? Click the map to pin your shop.")}</p>
+      <div id="map" class="map short"></div>
       <div><button>${t("Save shop")}</button></div>
     </form>
-    <form class="card stack" id="new" style="margin-top:14px">
+    <form class="card stack mt" id="new">
       <h2>${t("New listing")}</h2>
       <div class="row">
         <div><label for="lc">${t("Category")}</label><select id="lc" name="categoryId">${catOptions("part")}</select></div>
@@ -491,17 +573,17 @@ async function seller() {
         <div><label for="ls">${t("In stock")}</label><input id="ls" name="stock" type="number" min="0" value="1" required inputmode="numeric"></div>
       </div>
       <div><label for="ld">${t("Description")}</label><textarea id="ld" name="description"></textarea></div>
-      <div><label for="lm">${t("Photos")}</label><input id="lm" type="file" multiple accept="image/*,video/*"><div class="previews" id="lpreviews"></div></div>
+      <div>${uploadBox("lm", t("Add photos"), t("Photos up to 10 MB. The first photo is the cover."))}<div class="previews" id="lpreviews"></div></div>
       <div><button>${t("Publish listing")}</button></div>
     </form>
     <h2>${t("My listings")}</h2>
-    <table><tr><th>${t("Item")}</th><th>${t("Price (₾)")}</th><th>${t("Stock")}</th><th>${t("Visible")}</th><th></th></tr>
+    <div class="table-wrap"><table><tr><th>${t("Item")}</th><th>${t("Price (₾)")}</th><th>${t("Stock")}</th><th>${t("Visible")}</th><th></th></tr>
       ${listings.map(l => `<tr data-row="${l.id}"><td>${esc(l.title)}<br><span class="muted small">${esc(catName(l.category))}</span></td>
         <td><input name="price" value="${l.priceTetri / 100}" style="width:90px" inputmode="decimal" aria-label="${esc(t("Price (₾)") + ": " + l.title)}"></td>
         <td><input name="stock" type="number" min="0" value="${l.stock}" style="width:80px" aria-label="${esc(t("Stock") + ": " + l.title)}"></td>
         <td><input name="active" type="checkbox" ${l.active ? "checked" : ""} aria-label="${esc(t("Visible") + ": " + l.title)}"></td>
         <td><button class="secondary" data-save="${l.id}">${t("Save")}</button></td></tr>`).join("") || `<tr><td colspan="5" class="muted">${t("No listings yet. Add your first one above.")}</td></tr>`}
-    </table>
+    </table></div>
     <h2>${t("Incoming orders")}</h2>${ordersTable(orders, "seller")}`;
   const picker = pickerMap($("#map"), profile.location, p => { pin = p; });
   picker.map.setView(profile.location ? [profile.location.lat, profile.location.lng] : ELIAVA, 15);
@@ -524,14 +606,14 @@ const statusLabel = s => t("status:" + s);
 const sellerNext = { pending: ["confirmed", "cancelled"], confirmed: ["out_for_delivery", "completed", "cancelled"], out_for_delivery: ["completed", "cancelled"] };
 function ordersTable(orders, mode) {
   if (!orders.length) return `<p class="muted">${t("No orders yet.")}</p>`;
-  return `<table><tr><th>#</th><th>${t("Item")}</th><th>${mode === "seller" ? t("Customer") : t("Seller")}</th><th>${t("Qty")}</th><th>${t("Total")}</th><th>${t("Delivery")}</th><th>${t("Status")}</th></tr>
+  return `<div class="table-wrap"><table><tr><th>#</th><th>${t("Item")}</th><th>${mode === "seller" ? t("Customer") : t("Seller")}</th><th>${t("Qty")}</th><th>${t("Total")}</th><th>${t("Delivery")}</th><th>${t("Status")}</th></tr>
     ${orders.map(o => {
       const btns = mode === "seller" ? (sellerNext[o.status] || []) : (o.status === "pending" ? ["cancelled"] : []);
       return `<tr><td>${o.id}</td><td>${esc(o.listingTitle)}</td>
         <td>${mode === "seller" ? `${esc(o.customerName)}<br><a href="tel:${esc(o.customerPhone)}">${esc(o.customerPhone)}</a>` : `${esc(o.sellerName)}${o.stallCode ? ` (${t("Stall {code}", { code: esc(o.stallCode) })})` : ""}<br><a href="tel:${esc(o.sellerPhone)}">${esc(o.sellerPhone)}</a>`}</td>
         <td>${o.quantity}</td><td>${gel(o.totalTetri)}</td><td>${o.delivery ? esc(o.deliveryAddress) : t("Pickup")}</td>
         <td><span class="badge">${statusLabel(o.status)}</span><br>${btns.map(s => `<button class="secondary small" data-status="${s}" data-oid="${o.id}">${s === "cancelled" ? t("Cancel") : statusLabel(s)}</button>`).join(" ")}</td></tr>`;
-    }).join("")}</table>`;
+    }).join("")}</table></div>`;
 }
 function bindOrderStatus(reload) {
   bind("[data-status]", "click", (e, el) => act(async () => { await api("PATCH", "/api/orders/" + el.dataset.oid, { status: el.dataset.status }); reload(); }, t("Order updated")));
@@ -555,35 +637,36 @@ async function account() {
   let loc = tp?.location || null;
   app().innerHTML = `<h1>${t("My account")}</h1>
     <div class="grid-3">
-      <div class="card"><h2>${esc(u.name)}</h2><p class="muted">${esc(u.email)} · ${esc(u.phone)}<br>${t("Account type")}: ${esc(roleName(u.role))}</p></div>
-      <div class="card"><h2>${free() ? t("Payments") : t("Wallet: {amount}", { amount: gel(u.balanceTetri) })}</h2>
+      <div class="card"><div class="person"><span class="avatar lg">${initials(u.name)}</span><div><h2>${esc(u.name)}</h2><span class="badge">${esc(roleName(u.role))}</span></div></div>
+        <p class="muted">${esc(u.email)}<br>${esc(u.phone)}</p></div>
+      ${free() ? "" : `<div class="card"><h2>${free() ? t("Payments") : t("Wallet: {amount}", { amount: gel(u.balanceTetri) })}</h2>
         ${S.config.paymentsMode === "mock" ? `<form class="row" id="topup"><div><label for="ta">${t("Top up (₾)")}</label><input id="ta" name="amount" type="number" min="1" max="1000" value="20"></div><div><button>${t("Top up")}</button></div></form>
-        <p class="muted small">${t("Test mode: no real money is charged.")}</p>` : free() ? `<p class="muted small">${t("Free beta: registration and viewing numbers are free. No payments are taken.")}</p>` : ""}</div>
+        <p class="muted small">${t("Test mode: no real money is charged.")}</p>` : free() ? `<p class="muted small">${t("Free beta: registration and viewing numbers are free. No payments are taken.")}</p>` : ""}</div>`}
       ${pro ? `<div class="card"><h2>${t("Registration")}</h2>
         <p>${u.registrationActive ? `<span class="badge ok">${t("Active")}</span> ${free() ? t("free during the beta") : t("until {date}", { date: when(u.registrationPaidUntil) })}` : `<span class="badge warn">${t("Not paid")}</span> ${t("you're hidden from customers")}`}</p>
         ${free() ? "" : `<button id="reg">${t("Pay {fee} for {days} days", { fee: gel(S.config.registrationFee), days: S.config.registrationDays })}</button>`}</div>` : ""}
     </div>
-    ${pro && !free() ? `<div class="card" style="margin-top:14px"><h2>${t("Leaderboard boost")}</h2>
+    ${pro && !free() ? `<div class="card mt"><h2>${t("Leaderboard boost")}</h2>
       <p class="muted">${t("Your active boost: {mine}. Current #1 has {top}. Pay more than that to get to the top for {days} days. Boosted profiles are labelled “Promoted”.", { mine: gel(w.activeBoostTetri), top: gel(topAmount), days: S.config.boostDays })}</p>
       <form class="row" id="boost"><div><label for="ba">${t("Boost amount (₾)")}</label><input id="ba" name="amount" type="number" min="1" value="${Math.max(5, Math.floor((topAmount - w.activeBoostTetri) / 100) + 1)}"></div><div><button class="accent">${t("Boost")}</button></div></form></div>` : ""}
-    ${tp ? `<form class="card stack" id="tp" style="margin-top:14px"><h2>${t("Technician profile")}</h2>
+    ${tp ? `<form class="card stack mt" id="tp"><h2>${t("Technician profile")}</h2>
       <div class="row"><div><label for="tc">${t("City")}</label><input id="tc" name="city" value="${esc(tp.city)}"></div>
         <div><label for="tr">${t("I travel up to (km)")}</label><input id="tr" name="radius" type="number" min="1" max="500" value="${tp.serviceRadiusKm}" inputmode="numeric"></div></div>
       <div><label for="tb">${t("About me")}</label><textarea id="tb" name="bio">${esc(tp.bio)}</textarea></div>
-      <fieldset style="border:0;padding:0;margin:0"><legend class="muted" style="font-weight:600;font-size:13px">${t("Specialities")}</legend>${cats("repair").map(c => `<label class="check"><input type="checkbox" name="cat" value="${c.id}" ${tp.categories.some(x => x.id === c.id) ? "checked" : ""}> ${esc(catName(c))}</label>`).join("")}</fieldset>
-      <div class="row"><div><label>${t("My base location: click the map")}</label></div><div style="flex:0"><button type="button" class="secondary" id="locate">📍 ${t("Use my location")}</button></div></div>
-      <div id="map" class="map"></div>
+      <fieldset><legend>${t("Specialities")}</legend><div class="chips">${cats("repair").map(c => `<label class="chip"><input type="checkbox" name="cat" value="${c.id}" ${tp.categories.some(x => x.id === c.id) ? "checked" : ""}> ${esc(catName(c))}</label>`).join("")}</div></fieldset>
+      <div><label>${t("My base location: click the map")}</label><div class="map-head"><span class="loc-status" id="locs">${locStatus(!!loc)}</span><button type="button" class="secondary small" id="locate">${icon("pin")} ${t("Use my location")}</button></div>
+      <div id="map" class="map"></div></div>
       <div><button>${t("Save profile")}</button></div></form>` : ""}
     ${w.transactions.length || !free() ? `<h2>${t("Wallet history")}</h2>
-    <table><tr><th>${t("When")}</th><th>${t("What")}</th><th>${t("Amount")}</th></tr>${w.transactions.map(x => `<tr><td>${when(x.createdAt)}</td><td>${esc(reasonText(x.reason))}</td><td>${x.amountTetri > 0 ? "+" : ""}${gel(x.amountTetri)}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">${t("Nothing yet.")}</td></tr>`}</table>` : ""}`;
+    <div class="table-wrap"><table><tr><th>${t("When")}</th><th>${t("What")}</th><th>${t("Amount")}</th></tr>${w.transactions.map(x => `<tr><td>${when(x.createdAt)}</td><td>${esc(reasonText(x.reason))}</td><td>${x.amountTetri > 0 ? "+" : ""}${gel(x.amountTetri)}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">${t("Nothing yet.")}</td></tr>`}</table></div>` : ""}`;
   bind("#topup", "submit", (e, f) => act(async () => { await api("POST", "/api/wallet/topup", { amountTetri: Math.round(+f.amount.value * 100) }); account(); }, t("Wallet topped up")));
   bind("#reg", "click", () => act(async () => { await api("POST", "/api/registration/pay"); account(); }, t("Registration paid")));
   bind("#boost", "submit", (e, f) => act(async () => { await api("POST", "/api/boosts", { amountTetri: Math.round(+f.amount.value * 100) }); account(); }, t("Boost active!")));
   if (u.role !== "admin") {
-    app().insertAdjacentHTML("beforeend", `<form class="card stack" id="del" style="margin-top:14px;max-width:520px"><h2>${t("Delete my account")}</h2>
+    app().insertAdjacentHTML("beforeend", `<form class="card stack mt danger-zone" id="del" style="max-width:560px"><h2>${t("Delete my account")}</h2>
       <p class="muted small">${t("Removes your name, email, phone, photos, profile and open requests. Orders and payment records are kept without your personal details.")}</p>
       <div><label for="dp">${t("Password")}</label><input id="dp" name="password" type="password" required autocomplete="current-password"></div>
-      <div><button class="secondary">${t("Delete my account")}</button></div></form>`);
+      <div><button class="danger">${t("Delete my account")}</button></div></form>`);
     bind("#del", "submit", (e, f) => act(async () => {
       if (!confirm(t("Delete your account permanently? This can't be undone."))) return;
       await api("DELETE", "/api/me", { password: f.password.value });
@@ -591,7 +674,7 @@ async function account() {
     }));
   }
   if (tp) {
-    const picker = pickerMap($("#map"), loc, p => { loc = p; });
+    const picker = pickerMap($("#map"), loc, p => { loc = p; setLocStatus($("#locs"), true); });
     $("#locate").addEventListener("click", () => picker.locate());
     bind("#tp", "submit", (e, f) => act(async () => {
       if (!loc) throw new Error(t("Set your base location on the map"));
@@ -610,16 +693,16 @@ async function leaderboard(params) {
     <div class="tabs" role="group"><button class="${role === "technician" ? "on" : ""}" aria-pressed="${role === "technician"}" data-go="#/leaderboard?role=technician">${t("Technicians")}</button>
       <button class="${role === "seller" ? "on" : ""}" aria-pressed="${role === "seller"}" data-go="#/leaderboard?role=seller">${t("Sellers")}</button></div>
     <p class="muted">${free() ? t("Promoted placement opens when online payments launch. During the free beta nobody can pay to be first.") : t("Ranked by boost paid in the last {days} days. Boosted profiles appear first in search and are labelled “Promoted”. Want to be #1? Pay more than the current top on your {link} page.", { days: b.boostDays, link: `<a href="#/account">${t("Account")}</a>` })}</p>
-    ${b.entries.length ? `<table><tr><th>#</th><th>${t("Name")}</th><th></th><th>${t("Boost")}</th></tr>
-      ${b.entries.map(e => `<tr><td>${e.rank}</td><td><strong>${esc(e.name)}</strong></td><td class="muted">${esc(detailText(e.detail))}</td><td>${gel(e.boostTetri)}</td></tr>`).join("")}</table>`
-      : emptyState(t("Nobody is promoted yet."), `<a class="btn secondary" href="#/register?role=${role}">${joinLabel(role)}</a>`)}`;
+    ${b.entries.length && !free() ? `<div class="table-wrap"><table><tr><th>#</th><th>${t("Name")}</th><th>${t("Details")}</th><th>${t("Boost")}</th></tr>
+      ${b.entries.map(e => `<tr><td>${e.rank}</td><td><strong>${esc(e.name)}</strong></td><td class="muted">${esc(detailText(e.detail))}</td><td>${gel(e.boostTetri)}</td></tr>`).join("")}</table></div>`
+      : emptyState(free() ? t("Nobody is promoted during the free beta.") : t("Nobody is promoted yet."), `<a class="btn secondary" href="#/register?role=${role}">${joinLabel(role)}</a>`, "star")}`;
 }
 
 function login() {
   app().innerHTML = `<form class="card stack" id="f" style="max-width:420px;margin:auto"><h1>${t("Log in")}</h1>
     <div><label for="le">${t("Email")}</label><input id="le" name="email" type="email" required autocomplete="email"></div>
     <div><label for="lpw">${t("Password")}</label><input id="lpw" name="password" type="password" required autocomplete="current-password"></div>
-    <button>${t("Log in")}</button><p class="muted">${t("No account?")} <a href="#/register">${t("Sign up")}</a></p></form>`;
+    <button class="btn-block">${t("Log in")}</button><p class="muted">${t("No account?")} <a href="#/register">${t("Sign up")}</a></p></form>`;
   bind("#f", "submit", (e, f) => act(async () => {
     const r = await api("POST", "/api/auth/login", { email: f.email.value, password: f.password.value });
     setSession(r.token, r.user); go("#/");
@@ -640,7 +723,7 @@ function register(params) {
       <div class="hint" id="rph">${t("Georgian number, e.g. 555 12 34 56")}</div></div>
     <div><label for="rpw">${t("Password (8+ characters)")}</label><input id="rpw" name="password" type="password" required minlength="8" autocomplete="new-password"></div>
     <label class="check"><input type="checkbox" name="acceptTerms" required> <span>${t("I accept the {link}", { link: `<a href="${termsURL()}" target="_blank">${t("Terms & Conditions")}</a>` })}</span></label>
-    <button>${t("Create account")}</button></form>`;
+    <button class="btn-block">${t("Create account")}</button></form>`;
   bind("#f", "submit", (e, f) => act(async () => {
     if (!validPhone(f.phone.value)) throw new Error(t("Enter a Georgian phone number, e.g. +995 555 12 34 56"));
     const r = await api("POST", "/api/auth/register", {
@@ -657,17 +740,22 @@ async function admin() {
   app().innerHTML = `<h1>${t("Admin")}</h1>
     <p><a class="btn secondary" href="#/eliava">${t("Edit Eliava stall pins")}</a></p>
     <h2>${t("Reports from users")} (${reports.length})</h2>
-    <table><tr><th>${t("When")}</th><th>${t("What")}</th><th>${t("Reason")}</th><th>${t("Reported by")}</th><th></th></tr>
+    <div class="table-wrap"><table><tr><th>${t("When")}</th><th>${t("What")}</th><th>${t("Reason")}</th><th>${t("Reported by")}</th><th></th></tr>
       ${reports.map(r => `<tr><td>${when(r.createdAt)}</td><td>${t("target:" + r.targetType)} #${r.targetId}<br><strong>${esc(r.targetLabel)}</strong>${r.reportCount > 1 ? ` <span class="badge warn">${t("{n} reports", { n: r.reportCount })}</span>` : ""}</td>
         <td>${t("reason:" + r.reason)}${r.details ? `<br><span class="muted small">${esc(r.details)}</span>` : ""}</td><td>${esc(r.reporterName)}</td>
-        <td><button class="secondary small" data-resolve="${r.id}">${t("Mark resolved")}</button></td></tr>`).join("") || `<tr><td colspan="5" class="muted">${t("No open reports.")}</td></tr>`}</table>
+        <td><button class="secondary small" data-resolve="${r.id}">${t("Mark resolved")}</button></td></tr>`).join("") || `<tr><td colspan="5" class="muted">${t("No open reports.")}</td></tr>`}</table></div>
     <h2>${t("Who viewed which customer number")}</h2>
-    <table><tr><th>${t("When")}</th><th>${t("Technician")}</th><th>${t("Request")}</th><th>${t("Customer")}</th><th>${t("Paid")}</th></tr>
+    <div class="table-wrap"><table><tr><th>${t("When")}</th><th>${t("Technician")}</th><th>${t("Request")}</th><th>${t("Customer")}</th><th>${t("Paid")}</th></tr>
       ${reveals.map(r => `<tr><td>${when(r.createdAt)}</td><td>${esc(r.technicianName)}<br><span class="muted small">${esc(r.technicianPhone)} · ${esc(r.technicianEmail)}</span></td>
-        <td>#${r.postId} ${esc(r.postTitle)}</td><td>${esc(r.customerName)}</td><td>${gel(r.priceTetri)}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">${t("No views yet.")}</td></tr>`}</table>
+        <td>#${r.postId} ${esc(r.postTitle)}</td><td>${esc(r.customerName)}</td><td>${gel(r.priceTetri)}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">${t("No views yet.")}</td></tr>`}</table></div>
     <h2>${t("Flagged posts (possible duplicates)")}</h2>
     <div class="grid">${flagged.map(p => postCard(p, "admin")).join("") || `<p class="muted">${t("Nothing flagged.")}</p>`}</div>`;
   bind("[data-resolve]", "click", (e, el) => act(async () => { await api("POST", `/api/admin/reports/${el.dataset.resolve}/resolve`); admin(); }, t("Report resolved")));
+}
+
+function notFound() {
+  app().innerHTML = `<div class="card empty"><div class="empty-icon">${icon("search")}</div><h1>${t("Page not found")}</h1>
+    <p class="muted">${t("This page doesn't exist or was moved.")}</p><div class="actions"><a class="btn" href="#/">${t("Go to the home page")}</a></div></div>`;
 }
 
 /* ---------- router ---------- */
@@ -681,15 +769,22 @@ async function renderNow() {
   const [name, query] = location.hash.replace(/^#\/?/, "").split("?");
   renderNav();
   const page = routes[name] ? name : "";
-  document.title = titles[page] ? `${t(titles[page])} · Eliava` : t("Eliava: technicians, repairs and parts in Georgia");
+  const missing = name && !routes[name];
+  document.title = missing ? `${t("Page not found")} · Eliava` : titles[page] ? `${t(titles[page])} · Eliava` : t("Eliava: technicians, repairs and parts in Georgia");
   document.body.classList.add("busy"); app().setAttribute("aria-busy", "true");
-  try { await routes[page](new URLSearchParams(query || "")); window.scrollTo(0, 0); }
+  try { await (missing ? notFound : routes[page])(new URLSearchParams(query || "")); window.scrollTo(0, 0); }
   catch (e) { app().innerHTML = `<div class="card"><h1>${t("Something went wrong")}</h1><p class="muted">${esc(e.message)}</p></div>`; }
   finally { document.body.classList.remove("busy"); app().removeAttribute("aria-busy"); }
   if (navigated) { const h = $("h1", app()); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); } }
 }
 window.addEventListener("hashchange", () => { navigated = true; render(); });
+document.addEventListener("error", e => {
+  const el = e.target;
+  if (el.tagName === "IMG" && el.classList.contains("cover")) el.outerHTML = `<div class="cover placeholder">${icon("image")}</div>`;
+}, true);
 document.addEventListener("click", e => {
+  const menu = $("#menu");
+  if (menu?.open && !menu.contains(e.target)) menu.open = false;
   const g = e.target.closest("[data-go]"); if (g) go(g.dataset.go);
   const r = e.target.closest("[data-report]"); if (r) { const [type, id] = r.dataset.report.split(":"); openReport(type, +id); }
 });
@@ -697,6 +792,7 @@ document.addEventListener("click", e => {
   applyStaticText();
   try {
     [S.config, S.cats] = await Promise.all([api("GET", "/api/config"), api("GET", "/api/categories")]);
+    applyStaticText();
   } catch (e) {
     app().innerHTML = `<div class="card"><h1>${t("Can't reach the server")}</h1><p class="muted">${esc(e.message)}</p></div>`;
     return;
