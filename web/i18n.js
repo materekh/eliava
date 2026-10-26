@@ -123,7 +123,7 @@ const KA = {
   // admin
   "Edit Eliava stall pins": "ელიავას დახლების რედაქტირება", "Reports from users": "მომხმარებლების შეტყობინებები", "Reported by": "ვინ შეატყობინა",
   "{n} reports": "{n} შეტყობინება", "Mark resolved": "მოგვარებულია", "No open reports.": "ღია შეტყობინებები არ არის.", "Report resolved": "შეტყობინება დაიხურა",
-  "Who viewed which customer number": "ვინ რომელი მომხმარებლის ნომერი ნახა", "Technician": "ხელოსანი", "Request": "მოთხოვნა", "Row {r}, stall {n}": "რიგი {r}, დახლი {n}", "Paid": "გადახდილი",
+  "Who viewed which customer number": "ვინ რომელი მომხმარებლის ნომერი ნახა", "Technician": "ხელოსანი", "Request": "მოთხოვნა", "For customers": "მომხმარებლებისთვის", "Agree the price before work starts": "შეთანხმდით ფასზე სამუშაოს დაწყებამდე", "Ask for the price in writing (an SMS is enough) before the technician starts. Report anyone who changes it afterwards.": "სამუშაოს დაწყებამდე ფასი წერილობით დააფიქსირეთ (SMS-იც საკმარისია). თუ ხელოსანი ფასს მერე შეცვლის, დაარეპორტეთ.", "Row {r}, stall {n}": "რიგი {r}, დახლი {n}", "Paid": "გადახდილი",
   "No views yet.": "ნახვები ჯერ არ არის.", "Flagged posts (possible duplicates)": "მონიშნული მოთხოვნები (შესაძლო გამეორებები)", "Nothing flagged.": "მონიშნული არაფერია.",
   // server error messages
   "A stall with this code already exists": "ამ კოდით დახლი უკვე არსებობს", "Admin accounts can't be deleted here": "ადმინის ანგარიშის აქ წაშლა შეუძლებელია",

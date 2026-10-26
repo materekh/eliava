@@ -269,33 +269,41 @@ async function home() {
   const [tech, sell] = promo ? await Promise.all([api("GET", "/api/leaderboard?role=technician"), api("GET", "/api/leaderboard?role=seller")]) : [{ entries: [] }, { entries: [] }];
   const top = b => b.entries.length ? `<ol>${b.entries.slice(0, 5).map(e => `<li><strong>${esc(e.name)}</strong> <span class="muted">${esc(detailText(e.detail))}</span></li>`).join("")}</ol>` : `<p class="muted">${t("Nobody yet")}</p>`;
   const boards = promo && (tech.entries.length || sell.entries.length)
-    ? `<div class="grid-3 mt"><div class="card"><h2>${t("Promoted technicians")}</h2>${top(tech)}</div><div class="card"><h2>${t("Promoted sellers")}</h2>${top(sell)}</div></div>` : "";
+    ? `<div class="grid mt"><div class="card"><h2>${t("Promoted technicians")}</h2>${top(tech)}</div><div class="card"><h2>${t("Promoted sellers")}</h2>${top(sell)}</div></div>` : "";
   const r = S.me?.role;
   const primary = r === "technician" ? ["#/jobs", "Jobs near me", "briefcase"] : r === "seller" ? ["#/seller", "My shop", "store"] : ["#/post", "Post a problem", "post"];
-  const service = (ic, title, text, href, cta) => `<div class="card service"><div class="icon-box">${icon(ic)}</div><h2>${t(title)}</h2><p class="muted">${t(text)}</p><a class="btn secondary" href="${href}">${t(cta)}</a></div>`;
+  const row = (code, href, title, text) => `<a class="row-link" href="${href}"><span class="code">${code}</span><span><strong>${t(title)}</strong><span class="muted">${t(text)}</span></span><span class="arrow" aria-hidden="true">→</span></a>`;
   const steps = [["Describe the problem", "Add photos, the address area and whether you already have the part. You get a price range right away."],
     ["Nearby technicians see it", "Technicians who fix this near you open your request and call you. You see who viewed your number."],
+    ["Agree the price before work starts", "Ask for the price in writing (an SMS is enough) before the technician starts. Report anyone who changes it afterwards."],
     ["Get the part from Eliava", "If a part is needed, order it from a market stall with home delivery or pickup."]];
   const trust = [["shield", "Your exact address stays hidden until a technician views your number."], ["eye", "You can see every technician who viewed your number."],
     ["flag", "Every post, listing and profile has a report button, and an admin checks each report."], ["image", "Location data (GPS) is removed from photos when you upload them."]];
   app().innerHTML = `
-    <section class="hero">${free() ? `<span class="badge beta">${t("Free beta: no fees for anyone")}</span>` : ""}
-      <h1>${t("Repairs, technicians and parts, all in one place")}</h1>
-      <p>${t("Find a nearby technician, post what's broken, or buy parts from the Eliava market with delivery.")}</p>
-      <div class="actions"><a class="btn accent" href="${primary[0]}">${icon(primary[2])} ${t(primary[1])}</a><a class="btn secondary" href="#/technicians">${icon("wrench")} ${t("Find a technician")}</a></div></section>
-    <div class="grid-3">
-      ${service("wrench", "Find a technician", "Search by speciality and distance from you.", "#/technicians", "Search technicians")}
-      ${service("post", "Post a problem", "Describe it, add photos/videos and your location. Get a price estimate; nearby technicians contact you.", "#/post", "Post a problem")}
-      ${service("cart", "Parts market", "Parts and appliances from Eliava market sellers, with stall numbers on the map and home delivery.", "#/market", "Open market")}
-    </div>
-    <h2>${t("How it works")}</h2>
-    <ol class="card steps">${steps.map(([a, b]) => `<li><div><strong>${t(a)}</strong><span class="muted">${t(b)}</span></div></li>`).join("")}</ol>
-    <h2>${t("Why it's safe")}</h2>
-    <div class="card trust">${trust.map(([i, x]) => `<div>${icon(i)}<span>${t(x)}</span></div>`).join("")}</div>
+    <section class="hero">
+      <div class="hero-main">${free() ? `<span class="tag">${t("Free beta: no fees for anyone")}</span>` : ""}
+        <h1>${t("Repairs, technicians and parts, all in one place")}</h1>
+        <p>${t("Find a nearby technician, post what's broken, or buy parts from the Eliava market with delivery.")}</p>
+        <div class="actions"><a class="btn" href="${primary[0]}">${icon(primary[2])} ${t(primary[1])}</a><a class="btn ghost" href="#/technicians">${t("Find a technician")}</a></div>
+      </div>
+      <aside class="board"><div class="board-head"><span>${t("What's broken?")}</span><span class="code">A12</span></div>
+        <ul>${cats("repair").slice(0, 6).map(c => `<li><a href="#/technicians?category=${esc(c.slug)}">${esc(catShort(c))}<span aria-hidden="true">→</span></a></li>`).join("")}</ul>
+        <a class="board-all" href="#/technicians">${t("All specialities")} →</a></aside>
+    </section>
+    <section class="split">
+      <div class="feature"><span class="kicker">${t("For customers")}</span><h2>${t("Post a problem")}</h2>
+        <p>${t("Describe it, add photos/videos and your location. Get a price estimate; nearby technicians contact you.")}</p>
+        <a class="btn invert" href="#/post">${icon("post")} ${t("Post a problem")}</a></div>
+      <div class="rows">${row("B1", "#/technicians", "Find a technician", "Search by speciality and distance from you.")}${row("C3", "#/market", "Parts market", "Parts and appliances from Eliava market sellers, with stall numbers on the map and home delivery.")}</div>
+    </section>
+    <h2 class="kicker-title"><span class="code">D4</span>${t("How it works")}</h2>
+    <ol class="timeline">${steps.map(([a, b]) => `<li><div><strong>${t(a)}</strong><span class="muted">${t(b)}</span></div></li>`).join("")}</ol>
+    <section class="safe"><h2>${t("Why it's safe")}</h2>
+      <ul class="checklist">${trust.map(([i, x]) => `<li>${icon(i)}<span>${t(x)}</span></li>`).join("")}</ul></section>
     ${boards}
-    ${r === "technician" || r === "seller" ? "" : `<div class="card join mt"><div><h2>${t("Are you a technician or an Eliava seller?")}</h2>
-      <p class="muted">${free() ? t("Get customers near you. Registration is free during the beta.") : t("Get customers near you.")}</p></div>
-      <div class="actions"><a class="btn" href="#/register?role=technician">${joinLabel("technician")}</a><a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a></div></div>`}`;
+    ${r === "technician" || r === "seller" ? "" : `<section class="band"><div class="inner"><div><h2>${t("Are you a technician or an Eliava seller?")}</h2>
+      <p>${free() ? t("Get customers near you. Registration is free during the beta.") : t("Get customers near you.")}</p></div>
+      <div class="actions"><a class="btn" href="#/register?role=technician">${joinLabel("technician")}</a><a class="btn ghost" href="#/register?role=seller">${joinLabel("seller")}</a></div></div></section>`}`;
 }
 
 async function technicians(params) {
@@ -320,7 +328,7 @@ async function technicians(params) {
     const list = await act(() => api("GET", "/api/technicians?" + q));
     if (!list) return;
     markers.forEach(m => m.remove());
-    markers = list.filter(x => x.location).map(x => L.circleMarker([x.location.lat, x.location.lng], { radius: 8, color: "#0e7c66" }).addTo(picker.map).bindPopup(esc(x.name)));
+    markers = list.filter(x => x.location).map(x => L.circleMarker([x.location.lat, x.location.lng], { radius: 8, color: "#A12C13", fillColor: "#A12C13", fillOpacity: .85 }).addTo(picker.map).bindPopup(esc(x.name)));
     $("#results").innerHTML = list.length ? list.map(x => {
       const where = [cityName(x.city), x.distanceKm != null ? km(x.distanceKm) : ""].filter(Boolean).join(" · ");
       return `<div class="card item">
@@ -532,7 +540,7 @@ async function eliava(params) {
     const ll = [st.location.lat, st.location.lng];
     const m = isAdmin
       ? L.marker(ll, { draggable: true, title: t("Stall {code}", { code: st.code }) })
-      : L.circleMarker(ll, { radius: 9, color: "#fff", weight: 2, fillColor: "#0e7c66", fillOpacity: 1 });
+      : L.circleMarker(ll, { radius: 9, color: "#F6F1EA", weight: 2, fillColor: "#A12C13", fillOpacity: 1 });
     m.addTo(map).bindTooltip(st.code, { direction: "top", className: "stall-dot" });
     m.on("click", () => showStall(st));
     if (isAdmin) m.on("dragend", () => act(() => api("PATCH", "/api/admin/stalls/" + st.id, { location: m.getLatLng() }), t("Stall {code} moved", { code: st.code })));
