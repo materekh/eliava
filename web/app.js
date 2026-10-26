@@ -223,7 +223,7 @@ function registrationNotice() {
 function renderNav() {
   const r = S.me?.role;
   const cur = "#/" + location.hash.replace(/^#\/?/, "").split("?")[0];
-  const action = r === "technician" ? ["#/jobs", "Jobs near me", "briefcase", "Jobs"] : r === "seller" ? ["#/seller", "My shop", "store", "My shop"] : ["#/post", "Post a problem", "post", "New request"];
+  const action = r === "technician" ? ["#/jobs", "Jobs near me", "briefcase", "Jobs"] : r === "seller" ? ["#/seller", "My shop", "store", "My shop"] : ["#/post", "Post a problem", "post", "Request"];
   const on = h => h === cur ? ` aria-current="page"` : "";
   const cls = (h, extra = "") => `class="${[extra, h === cur ? "active" : ""].join(" ").trim()}"`;
   const main = [["#/technicians", "Find a technician"], ["#/market", "Market"], ["#/eliava", "Eliava map"]];

@@ -171,7 +171,7 @@ const KA = {
   "{name}: only JPG, PNG, WEBP, GIF images and MP4, WEBM, MOV videos are allowed": "{name}: დაშვებულია მხოლოდ JPG, PNG, WEBP, GIF სურათები და MP4, WEBM, MOV ვიდეოები",
   "Invalid {x}": "არასწორი: {x}", "Invalid request": "არასწორი მოთხოვნა",
   // UI rework
-  "Account menu": "ანგარიშის მენიუ",
+  "Account menu": "ანგარიშის მენიუ", "Request": "მოთხოვნა",
   "Jobs": "სამუშაოები",
   "Footer": "ქვედა მენიუ",
   "Free beta: no fees for anyone": "უფასო ბეტა: არანაირი საფასური არავისთვის",
