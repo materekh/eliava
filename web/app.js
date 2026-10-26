@@ -271,39 +271,42 @@ async function home() {
   const boards = promo && (tech.entries.length || sell.entries.length)
     ? `<div class="grid mt"><div class="card"><h2>${t("Promoted technicians")}</h2>${top(tech)}</div><div class="card"><h2>${t("Promoted sellers")}</h2>${top(sell)}</div></div>` : "";
   const r = S.me?.role;
-  const primary = r === "technician" ? ["#/jobs", "Jobs near me", "briefcase"] : r === "seller" ? ["#/seller", "My shop", "store"] : ["#/post", "Post a problem", "post"];
-  const row = (code, href, title, text) => `<a class="row-link" href="${href}"><span class="code">${code}</span><span><strong>${t(title)}</strong><span class="muted">${t(text)}</span></span><span class="arrow" aria-hidden="true">→</span></a>`;
-  const steps = [["Describe the problem", "Add photos, the address area and whether you already have the part. You get a price range right away."],
-    ["Nearby technicians see it", "Technicians who fix this near you open your request and call you. You see who viewed your number."],
-    ["Agree the price before work starts", "Ask for the price in writing (an SMS is enough) before the technician starts. Report anyone who changes it afterwards."],
+  const steps = [["Describe the problem", "Add photos, the address area and whether you already have the part."],
+    ["Nearby technicians call you", "Technicians who fix this near you see your request. You see who viewed your number."],
+    ["Agree the price before work starts", "Ask for the price in writing (an SMS is enough). Report anyone who changes it afterwards."],
     ["Get the part from Eliava", "If a part is needed, order it from a market stall with home delivery or pickup."]];
   const trust = [["shield", "Your exact address stays hidden until a technician views your number."], ["eye", "You can see every technician who viewed your number."],
     ["flag", "Every post, listing and profile has a report button, and an admin checks each report."], ["image", "Location data (GPS) is removed from photos when you upload them."]];
   app().innerHTML = `
-    <section class="hero">
-      <div class="hero-main">${free() ? `<span class="tag">${t("Free beta: no fees for anyone")}</span>` : ""}
-        <h1>${t("Repairs, technicians and parts, all in one place")}</h1>
-        <p>${t("Find a nearby technician, post what's broken, or buy parts from the Eliava market with delivery.")}</p>
-        <div class="actions"><a class="btn" href="${primary[0]}">${icon(primary[2])} ${t(primary[1])}</a><a class="btn ghost" href="#/technicians">${t("Find a technician")}</a></div>
-      </div>
-      <aside class="board"><div class="board-head"><span>${t("What's broken?")}</span><span class="code">A12</span></div>
-        <ul>${cats("repair").slice(0, 6).map(c => `<li><a href="#/technicians?category=${esc(c.slug)}">${esc(catShort(c))}<span aria-hidden="true">→</span></a></li>`).join("")}</ul>
-        <a class="board-all" href="#/technicians">${t("All specialities")} →</a></aside>
+    <section class="check-hero" aria-labelledby="hq">
+      ${free() ? `<span class="tag">${t("Free during the beta")}</span>` : ""}
+      <h1 id="hq">${t("What broke?")}</h1>
+      <p class="sub">${t("Pick the appliance to see what a repair usually costs in Tbilisi, then post the problem for nearby technicians.")}</p>
+      <div class="appliances" role="group" aria-label="${esc(t("Appliance"))}">${cats("repair").map(c => `<button type="button" data-cat="${c.id}" aria-pressed="false">${esc(catShort(c))}</button>`).join("")}</div>
+      <div class="answer idle" id="answer" aria-live="polite">${t("The typical price appears here.")}</div>
     </section>
-    <section class="split">
-      <div class="feature"><span class="kicker">${t("For customers")}</span><h2>${t("Post a problem")}</h2>
-        <p>${t("Describe it, add photos/videos and your location. Get a price estimate; nearby technicians contact you.")}</p>
-        <a class="btn invert" href="#/post">${icon("post")} ${t("Post a problem")}</a></div>
-      <div class="rows">${row("B1", "#/technicians", "Find a technician", "Search by speciality and distance from you.")}${row("C3", "#/market", "Parts market", "Parts and appliances from Eliava market sellers, with stall numbers on the map and home delivery.")}</div>
-    </section>
-    <h2 class="kicker-title"><span class="code">D4</span>${t("How it works")}</h2>
-    <ol class="timeline">${steps.map(([a, b]) => `<li><div><strong>${t(a)}</strong><span class="muted">${t(b)}</span></div></li>`).join("")}</ol>
-    <section class="safe"><h2>${t("Why it's safe")}</h2>
-      <ul class="checklist">${trust.map(([i, x]) => `<li>${icon(i)}<span>${t(x)}</span></li>`).join("")}</ul></section>
+    <div class="home-lower">
+      <section class="card"><h2>${t("How it works")}</h2>
+        <ol class="steps">${steps.map(([a, b]) => `<li><div><strong>${t(a)}</strong><span class="muted">${t(b)}</span></div></li>`).join("")}</ol></section>
+      <section class="card"><h2>${t("Why it's safe")}</h2>
+        <ul class="safe-list">${trust.map(([i, x]) => `<li>${icon(i)}<span>${t(x)}</span></li>`).join("")}</ul>
+        <p><a href="#/eliava">${t("See the Eliava market map")}</a></p></section>
+    </div>
     ${boards}
-    ${r === "technician" || r === "seller" ? "" : `<section class="band"><div class="inner"><div><h2>${t("Are you a technician or an Eliava seller?")}</h2>
+    ${r === "technician" || r === "seller" ? "" : `<section class="pros"><div><h2>${t("Are you a technician or an Eliava seller?")}</h2>
       <p>${free() ? t("Get customers near you. Registration is free during the beta.") : t("Get customers near you.")}</p></div>
-      <div class="actions"><a class="btn" href="#/register?role=technician">${joinLabel("technician")}</a><a class="btn ghost" href="#/register?role=seller">${joinLabel("seller")}</a></div></div></section>`}`;
+      <div class="actions"><a class="btn accent" href="#/register?role=technician">${joinLabel("technician")}</a><a class="btn ghost" href="#/register?role=seller">${joinLabel("seller")}</a></div></section>`}`;
+  $$("[data-cat]").forEach(b => b.addEventListener("click", async () => {
+    $$("[data-cat]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    const cat = S.cats.find(c => String(c.id) === b.dataset.cat);
+    const e = await act(() => api("GET", "/api/estimate/typical?category=" + cat.id));
+    if (!e) return;
+    const box = $("#answer");
+    box.className = "answer live";
+    box.innerHTML = `<div><div class="range">${gel(e.minTetri).replace(" ₾", "")}–${gel(e.maxTetri)}</div>
+      <p>${t("{cat}: typical repair with parts in Tbilisi. The technician gives the final price after looking at it.", { cat: esc(catName(cat)) })}</p></div>
+      <div class="actions"><a class="btn" href="#/post">${t("Post the problem")}</a><a class="btn ghost" href="#/technicians?category=${esc(cat.slug)}">${t("See technicians")}</a></div>`;
+  }));
 }
 
 async function technicians(params) {
@@ -328,7 +331,7 @@ async function technicians(params) {
     const list = await act(() => api("GET", "/api/technicians?" + q));
     if (!list) return;
     markers.forEach(m => m.remove());
-    markers = list.filter(x => x.location).map(x => L.circleMarker([x.location.lat, x.location.lng], { radius: 8, color: "#A12C13", fillColor: "#A12C13", fillOpacity: .85 }).addTo(picker.map).bindPopup(esc(x.name)));
+    markers = list.filter(x => x.location).map(x => L.circleMarker([x.location.lat, x.location.lng], { radius: 8, color: "#14202B", weight: 2, fillColor: "#F2C230", fillOpacity: 1 }).addTo(picker.map).bindPopup(esc(x.name)));
     $("#results").innerHTML = list.length ? list.map(x => {
       const where = [cityName(x.city), x.distanceKm != null ? km(x.distanceKm) : ""].filter(Boolean).join(" · ");
       return `<div class="card item">
@@ -540,7 +543,7 @@ async function eliava(params) {
     const ll = [st.location.lat, st.location.lng];
     const m = isAdmin
       ? L.marker(ll, { draggable: true, title: t("Stall {code}", { code: st.code }) })
-      : L.circleMarker(ll, { radius: 9, color: "#F6F1EA", weight: 2, fillColor: "#A12C13", fillOpacity: 1 });
+      : L.circleMarker(ll, { radius: 9, color: "#14202B", weight: 2, fillColor: "#F2C230", fillOpacity: 1 });
     m.addTo(map).bindTooltip(st.code, { direction: "top", className: "stall-dot" });
     m.on("click", () => showStall(st));
     if (isAdmin) m.on("dragend", () => act(() => api("PATCH", "/api/admin/stalls/" + st.id, { location: m.getLatLng() }), t("Stall {code} moved", { code: st.code })));

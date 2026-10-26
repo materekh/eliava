@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -196,4 +197,19 @@ func (s *Server) findDuplicate(ctx context.Context, customerID, categoryID int64
 		}
 	}
 	return nil, nil
+}
+
+// typicalEstimate is the public, rules-only price range for a repair category in Tbilisi (parts included).
+func (s *Server) typicalEstimate(w http.ResponseWriter, r *http.Request) error {
+	id, err := strconv.ParseInt(r.URL.Query().Get("category"), 10, 64)
+	if err != nil || id <= 0 {
+		return badRequest("Choose a valid repair category")
+	}
+	tbilisi := pricingAreas[0]
+	est, err := s.estimate(r.Context(), id, "", false, Point{Lat: tbilisi.lat, Lng: tbilisi.lng})
+	if err != nil {
+		return err
+	}
+	writeJSON(w, http.StatusOK, est)
+	return nil
 }

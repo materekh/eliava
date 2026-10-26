@@ -74,6 +74,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/technicians/{id}", pub(s.getTechnician))
 
 	m.HandleFunc("POST /api/estimate", s.authed(s.previewEstimate))
+	m.HandleFunc("GET /api/estimate/typical", pub(s.typicalEstimate))
 	m.HandleFunc("POST /api/posts", s.authed(s.createPost, "customer"))
 	m.HandleFunc("GET /api/posts/mine", s.authed(s.myPosts, "customer"))
 	m.HandleFunc("GET /api/posts/nearby", s.authed(s.nearbyPosts, "technician"))
