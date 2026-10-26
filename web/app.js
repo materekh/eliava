@@ -35,6 +35,10 @@ function icon(name) {
 }
 function initials(name) { return esc(String(name || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase()); }
 function catShort(c) { return catName(c).replace(/\s*\(.*\)\s*$/, ""); }
+function stallName(n) {
+  const m = LANG === "ka" && String(n || "").match(/^Row (\w+), stall (\d+)$/);
+  return m ? t("Row {r}, stall {n}", { r: m[1], n: m[2] }) : n || "";
+}
 function cityName(c) { return (LANG === "ka" && KA["area:" + c]) || c || ""; }
 function uploadBox(id, label, hint) {
   return `<label class="upload" for="${id}"><input id="${id}" type="file" multiple accept="image/*,video/*"><span class="upload-icon">${icon("upload")}</span>
@@ -509,7 +513,7 @@ async function eliava(params) {
     <p class="lead">${t("Pick a stall on the map or from the list to see what its sellers offer.")}${isAdmin ? ` <strong>${t("Admin")}:</strong> ${t("drag pins to their real positions; changes save automatically.")}` : ""}</p>
     <div class="card">
       <div id="map" class="map tall"></div>
-      <div class="stall-list" role="group" aria-label="${esc(t("Stalls"))}">${stalls.map(s => `<button type="button" class="secondary" data-stall="${s.id}" aria-pressed="false">${esc(s.code)}${s.name ? ` · ${esc(s.name)}` : ""}</button>`).join("") || `<p class="muted">${t("No stalls yet.")}</p>`}</div>
+      <div class="stall-list" role="group" aria-label="${esc(t("Stalls"))}">${stalls.map(s => `<button type="button" class="secondary" data-stall="${s.id}" aria-pressed="false">${esc(s.code)}${s.name ? ` · ${esc(stallName(s.name))}` : ""}</button>`).join("") || `<p class="muted">${t("No stalls yet.")}</p>`}</div>
       <p class="hint">${t("Stall positions on the map are approximate until each seller confirms theirs.")}</p>
     </div>
     ${isAdmin ? `<form class="card row mt" id="add"><div><label for="sc">${t("New stall code")}</label><input id="sc" name="code" required placeholder="E1"></div><div><label for="sn">${t("Name")}</label><input id="sn" name="name"></div><div class="actions"><button>${t("Add stall at map centre")}</button></div></form>` : ""}
@@ -518,7 +522,7 @@ async function eliava(params) {
   if (stalls.length > 1) map.fitBounds(L.latLngBounds(stalls.map(s => [s.location.lat, s.location.lng])), { padding: [40, 40], maxZoom: 18 });
   const showStall = async st => {
     $$("[data-stall]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.stall === String(st.id))));
-    $("#title").textContent = t("Stall {code}", { code: st.code }) + (st.name ? " · " + st.name : "");
+    $("#title").textContent = t("Stall {code}", { code: st.code }) + (st.name ? " · " + stallName(st.name) : "");
     const list = await act(() => api("GET", "/api/listings?stall=" + st.id));
     if (!list) return;
     $("#list").innerHTML = list.map(listingCard).join("") || emptyState(t("No listings at this stall yet."), `<a class="btn secondary" href="#/register?role=seller">${joinLabel("seller")}</a>`, "store");
