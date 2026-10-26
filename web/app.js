@@ -320,6 +320,7 @@ async function requestPage(params) {
   app().innerHTML = `<p><a href="#/">${t("Back to requests")}</a></p>
     <div class="card"><span class="badge">${esc(catName(cat))}</span><h1>${esc(p.title)}</h1>
       <div class="meta"><span>${icon("pin")} ${esc(t("area:" + p.area))}</span><span>${ago(p.createdAt)}</span><span>${icon("eye")} ${t("{n} technicians viewed", { n: p.views })}</span></div>
+      ${p.text ? `<p style="white-space:pre-line">${esc(p.text)}</p>` : ""}
       <p class="price">${gel(p.minTetri).replace(" ₾", "")}–${gel(p.maxTetri)}</p><p class="hint">${t("Only the area is public. The exact address and phone number stay hidden.")}</p>
       <div class="actions mt">${action}</div></div>`;
 }

@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"image/jpeg"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -149,5 +150,12 @@ func TestReports(t *testing.T) {
 	admin.do("GET", "/api/admin/reports", nil, http.StatusOK, &list)
 	if len(list) != 0 {
 		t.Fatalf("resolved report still listed: %+v", list)
+	}
+}
+
+func TestPublicTextMasksPhones(t *testing.T) {
+	got := publicText("call me 555 12 34 56 or +995-599-112233, AC 2 years old", 600)
+	if strings.Contains(got, "555") || strings.Contains(got, "599") || !strings.Contains(got, "AC 2 years old") {
+		t.Fatalf("publicText = %q", got)
 	}
 }
